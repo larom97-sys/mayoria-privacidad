@@ -1,0 +1,1188 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Mayoría</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="theme-color" content="#120A05">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="description" content="Mayoría: campaña política por turnos. Pocas acciones por semana, diez regiones, un objetivo: 51 escaños.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icono.svg" type="image/svg+xml">
+<style>
+/* Disposición: aplicación de una pantalla. Barra de estado arriba, mapa hexagonal al centro,
+   panel de decisiones abajo y navegación inferior. Oscuro cálido, cristal y brillos dorados. */
+:root{
+  color-scheme:dark;
+  --fondo:#120A05; --fondo2:#1C1108; --cristal:rgba(255,232,190,.065); --cristal2:rgba(255,232,190,.11);
+  --borde:rgba(232,182,74,.24); --borde2:rgba(232,182,74,.5);
+  --txt:#F2E6CC; --mut:#B9A98A; --oro:#E8B64A; --oro2:#F8E3A6; --tinta:#1A0F06;
+  --ok:#7BD67F; --mal:#FF7A66; --indeciso:#6B5B45;
+  --yo:#E8B64A; --r1:#3FC1C9; --r2:#9B7BFF; --r3:#E86FA6;
+  --titulo:Georgia,"Times New Roman",serif;
+  --cuerpo:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+  --lado-i:max(16px, env(safe-area-inset-left, 0px)); --lado-d:max(16px, env(safe-area-inset-right, 0px));
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0}
+body{background:var(--fondo);color:var(--txt);font:15px/1.4 var(--cuerpo);overflow:hidden;
+  overscroll-behavior:none;-webkit-user-select:none;user-select:none;touch-action:manipulation}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(60% 40% at 20% 0%,rgba(232,182,74,.16),transparent 70%),
+             radial-gradient(50% 35% at 100% 100%,rgba(155,123,255,.10),transparent 70%),
+             radial-gradient(40% 30% at 0% 90%,rgba(63,193,201,.08),transparent 70%)}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--oro2);outline-offset:2px}
+input{font:inherit;color:var(--txt)}
+a{color:var(--oro)}
+h1,h2,h3{font-family:var(--titulo);font-weight:400;margin:0;text-wrap:balance}
+#app{position:relative;z-index:1;height:100%;max-width:520px;margin:0 auto;display:flex;flex-direction:column;min-height:0}
+.pant{flex:1;min-height:0;display:flex;flex-direction:column;gap:12px;overflow-y:auto;
+  padding-block:14px;padding-left:var(--lado-i);padding-right:var(--lado-d);-webkit-overflow-scrolling:touch}
+.cab{display:flex;align-items:center;gap:10px}
+.cab h2{font-size:1.35rem;color:var(--oro2);flex:1;min-width:0}
+.atras{width:40px;height:40px;border-radius:12px;background:var(--cristal);border:1px solid var(--borde);font-size:1.2rem;flex:none}
+.cristal{background:var(--cristal);border:1px solid var(--borde);border-radius:16px;
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.caja{padding:12px 14px}
+.mut{color:var(--mut)} .peq{font-size:.82rem} .oro{color:var(--oro)} .ok{color:var(--ok)} .mal{color:var(--mal)}
+.num{font-variant-numeric:tabular-nums}
+.fila{display:flex;align-items:center;gap:8px} .fila>.cre{flex:1;min-width:0}
+.col{display:flex;flex-direction:column;gap:8px}
+.rej{display:grid;gap:8px} .rej2{grid-template-columns:1fr 1fr} .rej3{grid-template-columns:repeat(3,1fr)}
+.etq{font-size:.7rem;letter-spacing:.09em;text-transform:uppercase;color:var(--mut)}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:10px 16px;border-radius:14px;
+  background:var(--cristal2);border:1px solid var(--borde);font-weight:600;text-align:center;transition:transform .08s}
+.btn:active{transform:scale(.97)}
+.btn.pri{background:linear-gradient(180deg,#F3CC6B,#D9A235);color:var(--tinta);border-color:#F8E3A6;
+  box-shadow:0 0 22px rgba(232,182,74,.35)}
+.btn[disabled],.btn.no{opacity:.45}
+.btn.bloq{opacity:.55;border-style:dashed}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;background:var(--cristal2);
+  border:1px solid var(--borde);font-size:.76rem;white-space:nowrap}
+.chip.ok{border-color:rgba(123,214,127,.5)} .chip.mal{border-color:rgba(255,122,102,.5)}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+.barra{height:8px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}
+.barra>i{display:block;height:100%;background:linear-gradient(90deg,var(--oro),var(--oro2));border-radius:99px;transition:width .5s}
+.seg{display:flex;height:12px;border-radius:99px;overflow:hidden;background:var(--indeciso)}
+.seg>i{display:block;height:100%;transition:width .5s}
+
+/* Inicio */
+.logo{font-family:var(--titulo);font-size:3.1rem;letter-spacing:.06em;color:var(--oro2);text-align:center;line-height:1;
+  text-shadow:0 0 28px rgba(232,182,74,.55),0 0 2px rgba(232,182,74,.9);margin-top:10px}
+.lema{text-align:center;color:var(--mut)}
+.hemi{display:block;margin:0 auto;width:min(240px,70%)}
+
+/* Tarjetas de selección */
+.opc{display:flex;gap:12px;align-items:center;padding:12px 14px;text-align:left;border-radius:16px;
+  background:var(--cristal);border:1px solid var(--borde);width:100%}
+.opc.sel{border-color:var(--oro2);box-shadow:0 0 0 1px var(--oro2),0 0 20px rgba(232,182,74,.28);background:var(--cristal2)}
+.opc.bloq{opacity:.5}
+.opc .ico{font-size:1.7rem;width:44px;text-align:center;flex:none}
+.opc b{display:block}
+.avatar{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-size:1.4rem;flex:none;
+  background:var(--cristal2);border:1px solid var(--borde2)}
+.muestra{width:40px;height:40px;border-radius:50%;border:2px solid transparent;flex:none}
+.muestra.sel{border-color:#fff;box-shadow:0 0 14px currentColor}
+.emb{width:44px;height:44px;border-radius:12px;background:var(--cristal);border:1px solid var(--borde);font-size:1.3rem;flex:none}
+.emb.sel{border-color:var(--oro2);background:var(--cristal2)}
+.campo{width:100%;min-height:46px;border-radius:12px;border:1px solid var(--borde);background:rgba(0,0,0,.3);padding:8px 12px;
+  -webkit-user-select:text;user-select:text}
+.tema{padding:8px 10px;border-radius:12px;background:var(--cristal);border:1px solid var(--borde);font-size:.88rem;text-align:left}
+.tema.sel{border-color:var(--oro2);background:var(--cristal2)}
+
+/* Juego */
+.hud{padding-top:10px;padding-left:var(--lado-i);padding-right:var(--lado-d);display:flex;flex-direction:column;gap:6px;flex:none}
+.hud .f1{display:flex;gap:6px;align-items:stretch}
+.dato{flex:1;min-width:0;padding:5px 6px;border-radius:12px;background:var(--cristal);border:1px solid var(--borde);text-align:center}
+.dato b{display:block;font-size:1rem;font-variant-numeric:tabular-nums;white-space:nowrap}
+.dato span{font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);white-space:nowrap}
+.pips{letter-spacing:2px;color:var(--oro)}
+.proy{display:flex;justify-content:space-between;font-size:.78rem;gap:8px}
+.cuerpo{flex:1;min-height:0;display:flex;flex-direction:column}
+.mapa-wrap{flex:1;min-height:150px;position:relative;padding-left:var(--lado-i);padding-right:var(--lado-d)}
+.mapa-wrap svg{width:100%;height:100%;display:block}
+.hex polygon{stroke:rgba(248,227,166,.35);stroke-width:1.2;transition:fill .4s,fill-opacity .4s}
+.hex.sel polygon{stroke:#fff;stroke-width:2.6;filter:drop-shadow(0 0 6px rgba(248,227,166,.9))}
+.hex text{fill:var(--txt);text-anchor:middle;pointer-events:none;font-family:var(--cuerpo)}
+.hex .n{font-size:10px;fill:var(--oro2)}
+.hex .p{font-size:17px;font-weight:700}
+.hex .e{font-size:8.5px;fill:var(--mut)}
+.flota{font-size:15px;font-weight:800;text-anchor:middle;pointer-events:none;animation:flota 1.3s ease-out forwards;
+  paint-order:stroke;stroke:#120A05;stroke-width:3px}
+@keyframes flota{0%{opacity:0;transform:translateY(6px)}15%{opacity:1}100%{opacity:0;transform:translateY(-34px)}}
+.panel{flex:none;padding:6px var(--lado-d) 8px var(--lado-i);display:flex;flex-direction:column;gap:6px}
+.reg-cab{display:flex;align-items:baseline;gap:8px}
+.reg-cab h3{font-size:1.1rem;color:var(--oro2);flex:1;min-width:0}
+.acc{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-height:54px;padding:5px 3px;
+  border-radius:12px;background:var(--cristal);border:1px solid var(--borde);text-align:center;line-height:1.15}
+.acc:active{transform:scale(.96)}
+.acc b{font-size:.8rem}
+.acc .ef{font-size:.7rem;color:var(--ok)}
+.acc .co{font-size:.66rem;color:var(--mut)}
+.acc.no{opacity:.4}
+.fin{min-height:54px;padding:6px 8px}
+.guia{padding:8px 12px;border-radius:12px;background:rgba(232,182,74,.16);border:1px solid var(--borde2);font-size:.88rem}
+.nav{flex:none;display:flex;border-top:1px solid var(--borde);background:rgba(18,10,5,.92);
+  padding:0 var(--lado-d) env(safe-area-inset-bottom,0px) var(--lado-i)}
+.nav button{flex:1;min-height:54px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  font-size:.64rem;color:var(--mut)}
+.nav button i{font-style:normal;font-size:1.15rem;filter:grayscale(.6);opacity:.7}
+.nav button.sel{color:var(--oro2)} .nav button.sel i{filter:none;opacity:1}
+.desliza{flex:1;min-height:0;overflow-y:auto;padding:10px var(--lado-d) 14px var(--lado-i);display:flex;flex-direction:column;gap:10px}
+.nodo{display:block;width:100%;padding:8px;border-radius:12px;background:var(--cristal);border:1px solid var(--borde);text-align:left;font-size:.78rem;line-height:1.25}
+.nodo b{display:block;font-size:.82rem}
+.nodo.tengo{border-color:var(--ok);background:rgba(123,214,127,.12)}
+.nodo.puedo{border-color:var(--oro2);box-shadow:0 0 14px rgba(232,182,74,.3)}
+.nodo.lejos{opacity:.45}
+.noti{padding:8px 10px;border-left:3px solid var(--borde2);background:var(--cristal);border-radius:0 10px 10px 0;font-size:.88rem}
+.noti.b{border-left-color:var(--ok)} .noti.m{border-left-color:var(--mal)}
+table{width:100%;border-collapse:collapse;font-size:.84rem}
+td,th{padding:6px 4px;text-align:right;border-bottom:1px solid rgba(232,182,74,.12);font-variant-numeric:tabular-nums}
+td:first-child,th:first-child{text-align:left} th{font-weight:400;color:var(--mut);font-size:.72rem}
+.punto{display:inline-block;width:10px;height:10px;border-radius:50%;vertical-align:middle;margin-right:4px}
+.graf{width:100%;height:150px;display:block}
+
+/* Modales y avisos */
+#velo{position:fixed;inset:0;z-index:20;background:rgba(8,4,2,.72);display:flex;align-items:flex-end;justify-content:center;
+  padding:16px var(--lado-d) calc(16px + env(safe-area-inset-bottom,0px)) var(--lado-i);
+  -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+.modal{width:100%;max-width:480px;max-height:100%;overflow-y:auto;padding:16px;border-radius:20px;background:#22150A;
+  border:1px solid var(--borde2);box-shadow:0 0 40px rgba(232,182,74,.22);display:flex;flex-direction:column;gap:10px;
+  animation:sube .22s ease-out}
+.modal h3{font-size:1.25rem;color:var(--oro2)}
+@keyframes sube{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
+.dec{display:flex;flex-direction:column;gap:5px;align-items:flex-start;width:100%;padding:11px 12px;border-radius:14px;
+  background:var(--cristal2);border:1px solid var(--borde);text-align:left}
+.dec:active{transform:scale(.98)} .dec.no{opacity:.45}
+#aviso{position:fixed;left:50%;top:calc(118px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:30;
+  max-width:min(88vw,420px);padding:9px 14px;border-radius:12px;background:#2B1B0D;border:1px solid var(--borde2);
+  font-size:.88rem;text-align:center;box-shadow:0 6px 24px rgba(0,0,0,.5);pointer-events:none;transition:opacity .25s}
+.estrellas{font-size:2.2rem;letter-spacing:6px;text-align:center}
+.revela{animation:sube .3s ease-out}
+.esc-barra{position:relative}
+.esc-barra .linea{position:absolute;top:-4px;bottom:-4px;width:2px;background:#fff;left:50.5%}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.sinanim *{animation:none!important;transition:none!important}
+@media (max-height:640px){.acc{min-height:48px}.fin{min-height:48px}.dato span{display:none}.acc .co{display:none}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="velo" hidden></div>
+<div id="aviso" hidden></div>
+<script>
+'use strict';
+/* ════════════════════════════════════════════════════════════════════════════════
+   MAYORÍA · Campaña por turnos
+   ────────────────────────────────────────────────────────────────────────────────
+   TABLA DE EQUILIBRIO
+   Todo lo que afecta al ritmo y a la dificultad está aquí. La lógica de más abajo
+   solo lee estos valores: se pueden ajustar sin tocar nada más.
+   ════════════════════════════════════════════════════════════════════════════════ */
+const CONFIG = {
+  VERSION: '2.0.0',
+  CLAVE_GUARDADO: 'mayoria_v2',          // prefijo de localStorage
+  MOSTRAR_MODOS_FUTUROS: false,          // true = enseña «Crisis» y «Cartas» como «en preparación»
+
+  CAMPANA: {
+    semanas: { expres: 8, completa: 12 },// duración de cada modo, en turnos
+    paPorSemana: { expres: 4, completa: 3 }, // puntos de acción (PA) por turno en cada modo
+    escanos: 101, mayoria: 51,           // tamaño del parlamento y objetivo
+    umbralEscano: 3,                     // % mínimo en una región para optar a escaños
+    fondosIni: 60, ingresoSemanal: 15,
+    credIni: 60,                         // credibilidad inicial (0-100)
+    influenciaPorSemana: 1,              // puntos para el Árbol
+    apoyoIniJugador: [8, 12],            // % inicial del jugador en cada región (mín, máx)
+    indecisosIni: [30, 40],              // % inicial de indecisos en cada región
+    cuotaIndecisos: 0.6,                 // parte de cada ganancia que sale de indecisos (el resto, de rivales)
+    saturacion: 0.7,                     // multiplicador al repetir la misma acción en la misma región y semana
+    bonusTemaSemana: 0.25,               // extra en regiones a las que les importa el tema de la semana
+    bonusTemaBandera: 0.25,              // extra del Mitin donde importa uno de tus temas bandera
+    frenoDesde: 30, frenoMin: 0.45,      // rendimientos decrecientes: a partir de este % cuesta más crecer
+    maxPromesas: 3, maxOrg: 5,
+    probEvento: 1.0                      // probabilidad de decisión al empezar la semana (desde la 2.ª)
+  },
+
+  ACCIONES: {
+    mitin:      { pa: 1, fondos: 15, apoyo: 5.0 },
+    puerta:     { pa: 1, fondos: 0,  apoyo: 2.5, org: 1 },
+    anuncios:   { pa: 1, fondos: 30, apoyo: 3.5, vecinas: 1.6 },
+    recaudar:   { pa: 1, fondos: 0,  base: 18, porApoyo: 0.9, desgaste: 1.0 },
+    sede:       { pa: 2, fondos: 45, org: 2, ingreso: 4, defensa: 0.35 },
+    contraste:  { pa: 1, fondos: 20, dano: 5.0, robo: 0.5, riesgo: 0.30, penaCred: 6, penaRel: 12, penaRelFallo: 10 },
+    entrevista: { pa: 2, fondos: 0,  probBase: 0.40, probPorCred: 0.004, exito: 2.2, credExito: 5, fallo: -1.0, credFallo: -7 },
+    promesa:    { pa: 1, fondos: 0,  apoyo: 4.5, costeCumplir: 25, penaCred: 12, penaApoyo: 3, probPrueba: 0.30 },
+    puentes:    { pa: 1, fondos: 0,  rel: 18 }
+  },
+
+  ORG:  { apoyoSemanal: 0.35, defensaPorNivel: 0.08, defensaMax: 0.8, bonusElectoral: 0.05 },
+  CRED: { multMin: 0.75, multMax: 1.25 },   // la credibilidad multiplica todo lo que convences
+  PACTO:{ relIni: 45, umbral: 55 },         // relación mínima para que un rival acepte pactar
+  ELECCION: { ruido: 2.0 },                 // desviación máxima (en puntos) entre sondeo y voto real
+
+  DIFICULTAD: {
+    facil:      { nombre: 'Fácil',      nivel: 1, accRival: 1, fuerza: 1.15, ataque: 0.10, fondosExtra: 30, xp: 0.8, desc: 'Rivales tranquilos y algo más de dinero.' },
+    normal:     { nombre: 'Normal',     nivel: 1, accRival: 2, fuerza: 0.80, ataque: 0.15, fondosExtra: 0,  xp: 1.0, desc: 'La experiencia pensada para una campaña ajustada.' },
+    dificil:    { nombre: 'Difícil',    nivel: 3, accRival: 2, fuerza: 1.05, ataque: 0.22, fondosExtra: -10, xp: 1.4, desc: 'Rivales que reaccionan cuando subes.' },
+    implacable: { nombre: 'Implacable', nivel: 5, accRival: 3, fuerza: 1.00, ataque: 0.28, fondosExtra: -20, xp: 1.9, desc: 'Tres partidos contra ti. Solo para veteranos.' }
+  },
+
+  EQUIPO_MAX: 2,                            // asesores contratados a la vez
+
+  META: {
+    niveles: [0, 120, 320, 600, 950, 1400, 1950, 2600, 3400, 4400], // XP acumulada para cada nivel
+    xpPorEscano: 2, xpPorEstrella: 40, xpLogro: 40, xpDiario: 15,
+    bonoDiarioFondos: 8, bonoDiarioTope: 5,   // fondos extra por día de racha (hasta el tope)
+    xpRetoPorRacha: 25,                       // XP extra por cada semana de racha en el reto semanal
+    nivelReto: 2,
+    huecosLegado: [{ nivel: 3, huecos: 1 }, { nivel: 6, huecos: 2 }]
+  }
+};
+
+/* ══════════════ CONTENIDO (todo ficticio) ══════════════ */
+const PAIS = 'Auria';
+const TEMAS = {
+  empleo:    { n: 'Empleo',    i: '🛠️' }, sanidad:  { n: 'Sanidad',   i: '🩺' },
+  vivienda:  { n: 'Vivienda',  i: '🏠' }, seguridad:{ n: 'Seguridad', i: '🛡️' },
+  entorno:   { n: 'Entorno',   i: '🌳' }, educacion:{ n: 'Educación', i: '📚' }
+};
+const TEMA_IDS = Object.keys(TEMAS);
+// pos: centro del hexágono en el mapa; fuerte: partido rival con ventaja histórica (1-3)
+const REGIONES = [
+  { n: 'Altos de Niebla', c: ['Altos de', 'Niebla'],  esc: 8,  temas: ['entorno', 'sanidad'],    pos: [93.3, 55],   fuerte: 2 },
+  { n: 'Bosque Umbrío',   c: ['Bosque', 'Umbrío'],    esc: 7,  temas: ['entorno', 'empleo'],     pos: [179.9, 55],  fuerte: 2 },
+  { n: 'Costa Alba',      c: ['Costa', 'Alba'],       esc: 14, temas: ['vivienda', 'empleo'],    pos: [50, 130],    fuerte: 1 },
+  { n: 'Sierra Brava',    c: ['Sierra', 'Brava'],     esc: 6,  temas: ['seguridad', 'sanidad'],  pos: [136.6, 130], fuerte: 3 },
+  { n: 'Valle Hondo',     c: ['Valle', 'Hondo'],      esc: 9,  temas: ['empleo', 'educacion'],   pos: [223.2, 130], fuerte: 3 },
+  { n: 'Puerto Lumen',    c: ['Puerto', 'Lumen'],     esc: 16, temas: ['vivienda', 'educacion'], pos: [93.3, 205],  fuerte: 1 },
+  { n: 'Llano Dorado',    c: ['Llano', 'Dorado'],     esc: 11, temas: ['empleo', 'seguridad'],   pos: [179.9, 205], fuerte: 2 },
+  { n: 'Campo Viejo',     c: ['Campo', 'Viejo'],      esc: 13, temas: ['sanidad', 'seguridad'],  pos: [136.6, 280], fuerte: 3 },
+  { n: 'Ribera Clara',    c: ['Ribera', 'Clara'],     esc: 12, temas: ['educacion', 'sanidad'],  pos: [223.2, 280], fuerte: 1 },
+  { n: 'Islas Serenas',   c: ['Islas', 'Serenas'],    esc: 5,  temas: ['entorno', 'vivienda'],   pos: [40, 296],    fuerte: 0, isla: true }
+];
+const HEX_R = 49;
+const VECINAS = REGIONES.map((a, i) => REGIONES.map((b, j) => j).filter(j => j !== i &&
+  !a.isla && !REGIONES[j].isla && Math.hypot(a.pos[0] - REGIONES[j].pos[0], a.pos[1] - REGIONES[j].pos[1]) < 95));
+VECINAS[9] = [5, 7]; VECINAS[5].push(9); VECINAS[7].push(9);
+
+const RIVALES = [null,
+  { n: 'Unión del Faro',  corto: 'Faro',   lider: 'Alba Ferrún',   color: '#3FC1C9', cuad: '🟦', corriente: 'Continuistas: prometen mantener el rumbo.', estilo: 'Fuertes en la costa y en los medios.' },
+  { n: 'Pacto del Roble', corto: 'Roble',  lider: 'Darío Mestral', color: '#9B7BFF', cuad: '🟪', corriente: 'Arraigados: lo local va primero.',          estilo: 'Dominan el interior con mucha organización.' },
+  { n: 'Círculo Aurora',  corto: 'Aurora', lider: 'Vera Lunares',  color: '#E86FA6', cuad: '🟥', corriente: 'Rupturistas: quieren empezar de cero.',     estilo: 'Imprevisibles. Atacan a quien va primero.' }
+];
+const COLORES = ['#E8B64A', '#7BD67F', '#5AA9FF', '#FF9A4D'];
+const EMBLEMAS = ['⭐', '🌿', '🔥', '🌊', '🕊️', '⚙️', '🌻', '🗝️'];
+
+const LIDERES = [
+  { id: 'oradora',     n: 'Elena Vadoluz', mote: 'La Oradora',     ico: '🎤', nivel: 1, desc: 'Sus mítines convencen un 30 % más.' },
+  { id: 'gestor',      n: 'Bruno Aterra',  mote: 'El Gestor',      ico: '📊', nivel: 1, desc: 'Empieza con 25 fondos más y gana 8 más cada semana.' },
+  { id: 'vecina',      n: 'Irene Solmar',  mote: 'La Vecina',      ico: '🚪', nivel: 2, desc: 'El puerta a puerta suma 1,5 puntos más de apoyo.' },
+  { id: 'comunicador', n: 'Marco Leivano', mote: 'El Comunicador', ico: '📺', nivel: 4, desc: 'Entrevistas con un 15 % más de éxito y anuncios un 20 % mejores.' },
+  { id: 'negociadora', n: 'Nora Quintel',  mote: 'La Negociadora', ico: '🤝', nivel: 5, desc: 'Mejor relación inicial con todos y pactos más fáciles.' },
+  { id: 'estratega',   n: 'Teo Barrén',    mote: 'El Estratega',   ico: '♟️', nivel: 6, desc: 'Empieza con 2 de influencia y gana 1 extra cada 3 semanas.' }
+];
+const LEGADOS = [
+  { id: 'hucha',     n: 'Hucha llena',     nivel: 3, desc: '+30 fondos al empezar.' },
+  { id: 'base',      n: 'Base fiel',       nivel: 3, desc: '+2 de apoyo inicial en todas las regiones.' },
+  { id: 'contactos', n: 'Buenos contactos',nivel: 4, desc: '+12 de relación con todos los rivales.' },
+  { id: 'temple',    n: 'Temple',          nivel: 5, desc: '+10 de credibilidad inicial.' },
+  { id: 'madrugador',n: 'Madrugador',      nivel: 7, desc: '+1 PA la primera semana y +1 de influencia.' }
+];
+const ARBOL = {
+  calle:   { n: 'Calle',   i: '🚶', nodos: [
+    { id: 'c1', n: 'Voluntariado',      c: 1, d: 'Puerta a puerta: +1 de apoyo.' },
+    { id: 'c2', n: 'Mítines con gancho',c: 2, d: 'Mitin: +25 % de efecto.' },
+    { id: 'c3', n: 'Red de barrios',    c: 3, d: 'La organización da el doble de apoyo semanal.' },
+    { id: 'c4', n: 'Marea ciudadana',   c: 4, d: '+1 de apoyo semanal en cada región con sede.' } ] },
+  medios:  { n: 'Medios',  i: '📡', nodos: [
+    { id: 'm1', n: 'Gabinete de prensa',c: 1, d: 'Entrevista: +15 % de éxito.' },
+    { id: 'm2', n: 'Anuncios afinados', c: 2, d: 'Anuncios: 10 fondos menos.' },
+    { id: 'm3', n: 'Datos contrastados',c: 3, d: 'Contraste: la mitad de riesgo. +8 de credibilidad.' },
+    { id: 'm4', n: 'Momento viral',     c: 4, d: 'Tu primera acción de cada semana rinde un 50 % más.' } ] },
+  aparato: { n: 'Aparato', i: '🏛️', nodos: [
+    { id: 'a1', n: 'Tesorería',         c: 1, d: '+10 fondos cada semana.' },
+    { id: 'a2', n: 'Sedes ágiles',      c: 2, d: 'Abrir sede cuesta 1 PA y 15 fondos menos.' },
+    { id: 'a3', n: 'Agenda apretada',   c: 3, d: '+1 PA cada semana.' },
+    { id: 'a4', n: 'Maquinaria',        c: 4, d: '+2 puntos en todas las regiones el día de las elecciones.' } ] }
+};
+const EQUIPO = [
+  { id: 'tesorero',    n: 'Tesorera',                  ico: '💼', coste: 35, d: '+8 fondos cada semana.' },
+  { id: 'portavoz',    n: 'Portavoz',                  ico: '🗣️', coste: 40, d: '+1,5 de credibilidad cada semana.' },
+  { id: 'analista',    n: 'Analista de datos',         ico: '📈', coste: 40, d: 'Mítines y anuncios: +10 % de efecto.' },
+  { id: 'territorial', n: 'Coordinador territorial',   ico: '🧭', coste: 45, d: 'Cada sede da +1 de apoyo semanal.' },
+  { id: 'negociador',  n: 'Negociadora',               ico: '☕', coste: 30, d: '+4 de relación con todos cada semana.' }
+];
+// Retos semanales: cada semana natural toca uno, igual para todo el mundo (se calcula con la fecha, sin servidor).
+const RETOS = [
+  { n: 'Austeridad',        d: 'Empiezas con 20 fondos y cada semana entran 5 menos.', mod: { fondosIni: 20, ingreso: -5 } },
+  { n: 'Campaña relámpago', d: 'Solo 6 semanas, pero con 4 PA cada una.',              mod: { semanas: 6, pa: 4 } },
+  { n: 'Apagón publicitario', d: 'No se pueden comprar anuncios.',                     mod: { bloqueadas: ['anuncios'] } },
+  { n: 'Rivales en forma',  d: 'Los rivales convencen un 25 % más.',                   mod: { fuerzaRival: 1.25 } },
+  { n: 'País indeciso',     d: 'Hay 12 puntos más de indecisos en cada región.',       mod: { indecisosExtra: 12 } },
+  { n: 'Lupa pública',      d: 'Toda pérdida de credibilidad cuenta el doble.',        mod: { credPerdida: 2 } },
+  { n: 'Sin ladrillo',      d: 'No se pueden abrir sedes.',                            mod: { bloqueadas: ['sede'] } },
+  { n: 'Silencio en plató', d: 'No hay entrevistas, pero los mítines rinden un 20 % más.', mod: { bloqueadas: ['entrevista'], mitin: 1.2 } }
+];
+/* Arquitectura de modos: cada modo declara su configuración. «Crisis» y «Cartas» quedan registrados
+   pero desactivados; al implementarlos basta con poner activo:true y dar su propio bucle en `iniciar`. */
+const MODOS = {
+  expres:   { n: 'Campaña exprés',   ico: '⚡', activo: true,  desc: '8 semanas, 4 acciones cada una. Unos 3 minutos.',  nivel: 1 },
+  completa: { n: 'Campaña completa', ico: '🗳️', activo: true,  desc: '12 semanas, 3 acciones cada una. Unos 5 minutos.', nivel: 1 },
+  reto:     { n: 'Reto semanal',     ico: '📅', activo: true,  desc: 'Una regla especial cada semana.', nivel: CONFIG.META.nivelReto },
+  crisis:   { n: 'Crisis',           ico: '🚨', activo: false, desc: 'En preparación.', nivel: 99 },
+  cartas:   { n: 'Cartas',           ico: '🃏', activo: false, desc: 'En preparación.', nivel: 99 }
+};
+
+/* Decisiones de la semana. coste = lo que pagas seguro; ef = efecto seguro;
+   prob/ok/ko = resultado incierto (prob:'cred' depende de tu credibilidad).
+   Claves de efecto: f fondos · c credibilidad · n apoyo nacional · i influencia · pa ·
+   reg:[región, puntos] (ev, mejor, peor) · tema:[tema, puntos] · rel relación con {rival} ·
+   riv apoyo nacional de {rival} · org:[región, niveles] */
+const EVENTOS = [
+  { t: 'Un donante polémico', x: 'Un empresario con mala prensa quiere financiar tu campaña.', o: [
+    { t: 'Aceptar el dinero', ef: { f: 50, c: -8 } }, { t: 'Rechazarlo en público', ef: { c: 5 } } ] },
+  { t: 'Huelga de transportes', x: 'Los autobuses de {region} llevan tres días parados.', o: [
+    { t: 'Ofrecerte a mediar', prob: 0.55, ok: { reg: ['ev', 5], c: 3 }, ko: { c: -4 } }, { t: 'No pronunciarte', ef: { reg: ['ev', -1] } } ] },
+  { t: 'Un vídeo tuyo se hace viral', x: 'Te grabaron ayudando a empujar un coche averiado.', o: [
+    { t: 'Darle difusión', coste: { f: 15 }, ef: { n: 1.5 } }, { t: 'Dejar que corra solo', ef: { i: 1 } } ] },
+  { t: 'Errata en los carteles', x: 'Mil carteles impresos con una falta de ortografía.', o: [
+    { t: 'Reírte de ti mismo en redes', prob: 0.6, ok: { c: 5, n: 1 }, ko: { c: -3 } }, { t: 'Reimprimirlos', coste: { f: 20 }, ef: {} } ] },
+  { t: 'Inundaciones', x: 'Una tormenta ha anegado varios barrios de {region}.', o: [
+    { t: 'Ir con voluntarios', coste: { pa: 1 }, ef: { reg: ['ev', 5], c: 4 } }, { t: 'Enviar un mensaje de apoyo', ef: { reg: ['ev', 1] } } ] },
+  { t: 'Debate regional', x: 'La televisión de {region} te invita a un debate esta semana.', o: [
+    { t: 'Acudir en persona', coste: { pa: 1 }, prob: 'cred', ok: { reg: ['ev', 6] }, ko: { reg: ['ev', -2] } }, { t: 'Enviar a tu portavoz', ef: { reg: ['ev', 1.5] } } ] },
+  { t: 'Se filtra un borrador', x: 'Un periódico publica un documento interno a medio escribir.', o: [
+    { t: 'Reconocerlo y explicarlo', ef: { c: 3, n: -1 } }, { t: 'Negar que sea vuestro', prob: 0.5, ok: {}, ko: { c: -12 } } ] },
+  { t: 'Propuesta de frente común', x: '{rival} te propone firmar juntos una medida sobre vivienda.', o: [
+    { t: 'Firmar', ef: { rel: 20, tema: ['vivienda', 2], c: -2 } }, { t: 'Declinar con educación', ef: { rel: -8, c: 2 } } ] },
+  { t: 'Una alcaldesa te apoya', x: 'La alcaldesa de un pueblo de {region} ofrece hacer campaña contigo.', o: [
+    { t: 'Montar actos con ella', coste: { f: 25 }, ef: { reg: ['ev', 5], org: ['ev', 1] } }, { t: 'Agradecerlo sin más', ef: { reg: ['ev', 1] } } ] },
+  { t: 'Voluntarios desbordados', x: 'Se apunta más gente de la que podéis organizar.', o: [
+    { t: 'Contratar coordinación', coste: { f: 20 }, ef: { org: ['mejor', 2] } }, { t: 'Formarlos tú', coste: { pa: 1 }, ef: { org: ['mejor', 1], i: 1 } } ] },
+  { t: 'Encuesta favorable', x: 'Un sondeo independiente te da mejor resultado del esperado.', o: [
+    { t: 'Difundirla', coste: { f: 10 }, ef: { n: 1 } }, { t: 'Usarla para afinar la estrategia', ef: { i: 2 } } ] },
+  { t: 'Tropiezo de un rival', x: '{rival} se queda en blanco en una entrevista en directo.', o: [
+    { t: 'Hacer sangre', ef: { riv: -2, rel: -15, c: -3 } }, { t: 'Mostrar elegancia', ef: { c: 4, rel: 8 } } ] },
+  { t: 'Tertulia de radio', x: 'Un programa con mucha audiencia te quiere mañana a primera hora.', o: [
+    { t: 'Ir', prob: 0.6, ok: { n: 1.2, c: 2 }, ko: { c: -4 } }, { t: 'Dedicar la mañana a llamar a donantes', ef: { f: 20 } } ] },
+  { t: 'Cena de recaudación', x: 'Tu equipo puede organizar una cena con simpatizantes.', o: [
+    { t: 'Organizarla', coste: { pa: 1 }, ef: { f: 45 } }, { t: 'Ahora no', ef: {} } ] },
+  { t: 'Un rumor falso', x: 'Circula un bulo sobre tu pasado.', o: [
+    { t: 'Desmentirlo con documentos', coste: { f: 15 }, ef: { c: 4 } }, { t: 'Ignorarlo', prob: 0.5, ok: {}, ko: { n: -1.5, c: -4 } } ] },
+  { t: 'Acto en la universidad', x: 'Estudiantes de {region} piden que vayas a responder preguntas.', o: [
+    { t: 'Ir', coste: { pa: 1 }, ef: { reg: ['ev', 4], i: 1 } }, { t: 'Mandar un vídeo', ef: { reg: ['ev', 1] } } ] },
+  { t: 'Cierra una fábrica', x: 'La mayor fábrica de {region} anuncia que cierra.', o: [
+    { t: 'Anunciar un plan de empleo sin detallar', ef: { reg: ['ev', 5], c: -3 } }, { t: 'Pedir prudencia', ef: { c: 2, reg: ['ev', -1] } } ] },
+  { t: 'Publicidad a mitad de precio', x: 'Una cadena te ofrece un hueco de última hora.', o: [
+    { t: 'Comprarlo', coste: { f: 20 }, ef: { n: 1.5 } }, { t: 'Dejarlo pasar', ef: {} } ] },
+  { t: 'Dimite tu jefe de prensa', x: 'Se va sin avisar, en plena campaña.', o: [
+    { t: 'Contratar a otro ya', coste: { f: 25 }, ef: {} }, { t: 'Atender tú a la prensa', coste: { pa: 1 }, ef: { c: 2 } } ] },
+  { t: 'Ola de calor', x: 'Tres semanas sin bajar de cuarenta grados.', o: [
+    { t: 'Presentar un plan de sombra y agua', coste: { f: 15 }, ef: { tema: ['entorno', 3] } }, { t: 'Repartir agua en tus actos', ef: { reg: ['mejor', 2] } } ] },
+  { t: 'Una foto incómoda', x: 'Aparece una foto tuya de hace años con un disfraz ridículo.', o: [
+    { t: 'Publicarla tú con humor', ef: { c: 2, n: 0.5 } }, { t: 'Pedir que la retiren', prob: 0.5, ok: {}, ko: { c: -8 } } ] },
+  { t: 'Te ofrecen una portada', x: 'Una revista te da a elegir el enfoque.', o: [
+    { t: 'Entrevista a fondo', ef: { c: 5 } }, { t: 'Reportaje personal', ef: { n: 1, c: -1 } } ] },
+  { t: 'Descuadre en las cuentas', x: 'La tesorería detecta un error en las cuentas del partido.', o: [
+    { t: 'Auditoría pública', coste: { f: 15 }, ef: { c: 6 } }, { t: 'Arreglarlo sin ruido', prob: 0.65, ok: {}, ko: { c: -10, f: -10 } } ] },
+  { t: 'Cara a cara', x: '{rival} te reta a un debate entre los dos.', o: [
+    { t: 'Aceptar', prob: 'cred', ok: { n: 2, riv: -1 }, ko: { n: -1.5 } }, { t: 'Rechazar', ef: { c: -2 } } ] },
+  { t: 'Fiestas mayores', x: '{region} celebra sus fiestas esta semana.', o: [
+    { t: 'Pasear y saludar', coste: { pa: 1 }, ef: { reg: ['ev', 3], org: ['ev', 1] } }, { t: 'Patrocinar un concurso', coste: { f: 15 }, ef: { reg: ['ev', 2.5] } } ] },
+  { t: 'Caída de las redes', x: 'Las redes sociales no funcionan en todo el país.', o: [
+    { t: 'Volver a la calle', ef: { org: ['peor', 1] } }, { t: 'Ahorrar en publicidad', ef: { f: 12 } } ] },
+  { t: 'Crecen los indecisos', x: 'Tu sondeo interno dice que mucha gente aún no sabe a quién votar.', o: [
+    { t: 'Semana de escucha', coste: { pa: 1 }, ef: { i: 2 } }, { t: 'Seguir con el plan', ef: {} } ] },
+  { t: 'Urgencias colapsadas', x: 'Los hospitales no dan abasto y todos los partidos opinan.', o: [
+    { t: 'Propuesta con cifras', coste: { f: 10 }, ef: { tema: ['sanidad', 2.5], c: 2 } }, { t: 'Culpar a los demás', ef: { tema: ['sanidad', 3], c: -5, rel: -8 } } ] }
+];
+const LOGROS = [
+  { id: 'primera',   n: 'Primera campaña',  d: 'Termina una campaña.' },
+  { id: 'gobierno',  n: 'Al gobierno',      d: 'Forma gobierno.' },
+  { id: 'absoluta',  n: 'Mayoría absoluta', d: 'Consigue 51 escaños o más.' },
+  { id: 'limpio',    n: 'Juego limpio',     d: 'Forma gobierno sin usar campañas de contraste.' },
+  { id: 'pleno',     n: 'Pleno',            d: 'Sé el más votado en las diez regiones.' },
+  { id: 'sedes5',    n: 'Bien implantado',  d: 'Termina con 5 sedes abiertas.' },
+  { id: 'creible',   n: 'Palabra dada',     d: 'Termina con 90 de credibilidad o más.' },
+  { id: 'pactista',  n: 'Arte del pacto',   d: 'Gobierna en coalición.' },
+  { id: 'promesas',  n: 'Lo prometido',     d: 'Forma gobierno habiendo cumplido 3 promesas.' },
+  { id: 'dificil',   n: 'Curtido',          d: 'Forma gobierno en Difícil.' },
+  { id: 'implacable',n: 'Contra todos',     d: 'Forma gobierno en Implacable.' },
+  { id: 'reto',      n: 'Reto superado',    d: 'Forma gobierno en un reto semanal.' },
+  { id: 'racha3',    n: 'Tres de tres',     d: 'Supera el reto semanal 3 semanas seguidas.' },
+  { id: 'constante', n: 'Constancia',       d: 'Juega 7 días seguidos.' },
+  { id: 'coleccion', n: 'Varias caras',     d: 'Forma gobierno con 3 líderes distintos.' }
+];
+
+/* ══════════════ UTILIDADES ══════════════ */
+const C = CONFIG.CAMPANA, A = CONFIG.ACCIONES;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const dec = (n, d = 1) => (Math.round(n * 10 ** d) / 10 ** d).toFixed(d).replace('.', ',').replace(/,0+$/, '');
+const sig = (n, d = 1) => (n >= 0 ? '+' : '−') + dec(Math.abs(n), d);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const Almacen = {
+  leer(k) { try { const v = localStorage.getItem(CONFIG.CLAVE_GUARDADO + '_' + k); return v ? JSON.parse(v) : null; } catch (e) { return null; } },
+  guardar(k, v) { try { localStorage.setItem(CONFIG.CLAVE_GUARDADO + '_' + k, JSON.stringify(v)); return true; } catch (e) { return false; } },
+  borrar(k) { try { localStorage.removeItem(CONFIG.CLAVE_GUARDADO + '_' + k); } catch (e) {} }
+};
+/* Puente con la plataforma: al empaquetar con Capacitor basta con sustituir estos métodos por los plugins nativos. */
+const Plataforma = {
+  vibrar(ms) { try { if (P.ajustes.vibra && navigator.vibrate) navigator.vibrate(ms); } catch (e) {} },
+  async compartir(texto) {
+    try { if (navigator.share) { await navigator.share({ text: texto }); return 'compartido'; } } catch (e) { if (e && e.name === 'AbortError') return 'cancelado'; }
+    try { await navigator.clipboard.writeText(texto); return 'copiado'; } catch (e) { return 'manual'; }
+  }
+};
+let _audio = null;
+function sonido(tipo) {
+  if (!P.ajustes.sonido) return;
+  try {
+    _audio = _audio || new (window.AudioContext || window.webkitAudioContext)();
+    const notas = { toque: [520], bien: [520, 780], mal: [300, 200], fin: [392, 523, 659, 784], compra: [660, 880] }[tipo] || [440];
+    notas.forEach((f, k) => {
+      const o = _audio.createOscillator(), g = _audio.createGain(), t = _audio.currentTime + k * 0.09;
+      o.type = 'triangle'; o.frequency.value = f; g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.08, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+      o.connect(g); g.connect(_audio.destination); o.start(t); o.stop(t + 0.18);
+    });
+  } catch (e) {}
+}
+
+/* ══════════════ PERFIL (progreso entre partidas) ══════════════ */
+function perfilNuevo() {
+  return { v: 1, xp: 0, racha: 0, ultimoDia: '', bono: 0, logros: {}, estrellas: {}, lideresGanados: {},
+    stats: { partidas: 0, gobiernos: 0, absolutas: 0, mejor: 0 },
+    reto: { sem: 0, mejor: 0, superado: false }, rachaSem: 0, ultimaSemSuperada: 0,
+    ajustes: { sonido: true, vibra: true, anim: true }, tutorial: false, ultimo: null };
+}
+let P = Object.assign(perfilNuevo(), Almacen.leer('perfil') || {});
+P.ajustes = Object.assign({ sonido: true, vibra: true, anim: true }, P.ajustes || {});
+P.stats = Object.assign({ partidas: 0, gobiernos: 0, absolutas: 0, mejor: 0 }, P.stats || {});
+P.reto = Object.assign({ sem: 0, mejor: 0, superado: false }, P.reto || {});
+const guardarPerfil = () => Almacen.guardar('perfil', P);
+function nivelDe(xp) { const n = CONFIG.META.niveles; let l = 1; for (let k = 0; k < n.length; k++) if (xp >= n[k]) l = k + 1; return l; }
+function progresoNivel() {
+  const n = CONFIG.META.niveles, l = nivelDe(P.xp);
+  if (l >= n.length) return { nivel: l, pct: 100, falta: 0 };
+  return { nivel: l, pct: (P.xp - n[l - 1]) / (n[l] - n[l - 1]) * 100, falta: n[l] - P.xp };
+}
+function huecosLegado() { const l = nivelDe(P.xp); let h = 0; CONFIG.META.huecosLegado.forEach(x => { if (l >= x.nivel) h = x.huecos; }); return h; }
+function desbloqueosDe(nivel) {
+  const out = [];
+  LIDERES.forEach(x => { if (x.nivel === nivel) out.push('Líder: ' + x.n + ', ' + x.mote); });
+  Object.values(CONFIG.DIFICULTAD).forEach(x => { if (x.nivel === nivel) out.push('Dificultad: ' + x.nombre); });
+  Object.values(MODOS).forEach(x => { if (x.activo && x.nivel === nivel) out.push('Modo: ' + x.n); });
+  LEGADOS.forEach(x => { if (x.nivel === nivel) out.push('Legado: ' + x.n); });
+  CONFIG.META.huecosLegado.forEach(x => { if (x.nivel === nivel) out.push(x.huecos === 1 ? 'Primer hueco de legado' : 'Segundo hueco de legado'); });
+  return out;
+}
+function ganarXP(n) {
+  const antes = nivelDe(P.xp); P.xp += Math.round(n); const despues = nivelDe(P.xp); const nuevos = [];
+  for (let l = antes + 1; l <= despues; l++) nuevos.push(...desbloqueosDe(l));
+  return { antes, despues, nuevos };
+}
+const hoyStr = (d = new Date()) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+function semanaId(d = new Date()) { // semanas completas desde un lunes fijo; cambia cada lunes
+  const local = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()); return Math.floor((local / 86400000 + 3) / 7);
+}
+function retoActual() { const s = semanaId(); return Object.assign({ sem: s, num: s - 2900, seed: s * 7919 + 13 }, RETOS[s % RETOS.length]); }
+function diasParaLunes() { const d = new Date().getDay(); return d === 0 ? 1 : 8 - d; }
+function comprobarDia() { // racha diaria; devuelve aviso si hoy es un día nuevo
+  const hoy = hoyStr(); if (P.ultimoDia === hoy) return null;
+  const ayer = new Date(); ayer.setDate(ayer.getDate() - 1);
+  P.racha = P.ultimoDia === hoyStr(ayer) ? P.racha + 1 : 1; P.ultimoDia = hoy;
+  P.bono = CONFIG.META.bonoDiarioFondos * Math.min(P.racha, CONFIG.META.bonoDiarioTope);
+  const sub = ganarXP(CONFIG.META.xpDiario);
+  if (P.racha >= 7) P.logros.constante = true;
+  if (P.reto.sem !== semanaId()) { // semana nueva: si no se superó la anterior, la racha semanal se pierde
+    if (P.ultimaSemSuperada < semanaId() - 1) P.rachaSem = 0;
+    P.reto = { sem: semanaId(), mejor: 0, superado: false };
+  }
+  guardarPerfil(); return { racha: P.racha, bono: P.bono, sub };
+}
+
+/* ══════════════ MOTOR DE CAMPAÑA (sin interfaz) ══════════════ */
+let G = null; // partida en curso
+function rnd() { let t = (G.rng = (G.rng + 0x6D2B79F5) | 0); t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }
+const entre = (a, b) => a + rnd() * (b - a);
+function elegirPeso(pesos) { const tot = pesos.reduce((a, b) => a + b, 0); let x = rnd() * tot; for (let k = 0; k < pesos.length; k++) { x -= pesos[k]; if (x <= 0) return k; } return pesos.length - 1; }
+const guardarPartida = () => Almacen.guardar('partida', G);
+const tiene = id => !!G.arbol[id];
+const asesor = id => G.equipo.includes(id);
+const dif = () => CONFIG.DIFICULTAD[G.dif];
+const paBase = () => G.mods.pa || C.paPorSemana[G.modo] || C.paPorSemana.completa;
+const colorDe = p => p === 0 ? G.color : RIVALES[p].color;
+const nombreDe = p => p === 0 ? G.nombre : RIVALES[p].n;
+
+function nuevaPartida(o) {
+  const mod = o.modo === 'reto' ? retoActual().mod : {};
+  const D = CONFIG.DIFICULTAD[o.dif], leg = o.legados || [];
+  G = { v: 1, modo: o.modo, dif: o.dif, mods: mod, rng: (o.seed != null ? o.seed : (Date.now() ^ (Math.random() * 1e9))) | 0,
+    retoSem: o.modo === 'reto' ? semanaId() : 0,
+    lider: o.lider, nombre: o.nombre, color: o.color, emblema: o.emblema, banderas: o.banderas.slice(0, 2), legados: leg,
+    semana: 1, semanas: mod.semanas || C.semanas[o.modo] || C.semanas.completa,
+    pa: 0, fondos: (mod.fondosIni != null ? mod.fondosIni : C.fondosIni) + D.fondosExtra + (o.lider === 'gestor' ? 25 : 0) + (leg.includes('hucha') ? 30 : 0) + (o.bono || 0),
+    cred: C.credIni + (leg.includes('temple') ? 10 : 0), inf: (o.lider === 'estratega' ? 2 : 0) + (leg.includes('madrugador') ? 1 : 0),
+    rel: [0, 0, 0, 0].map((_, p) => p ? CONFIG.PACTO.relIni + (o.lider === 'negociadora' ? 15 : 0) + (leg.includes('contactos') ? 12 : 0) : 0),
+    regs: [], promesas: [], arbol: {}, equipo: [], noticias: [], hist: [], vistos: [], evento: null, fase: 'acciones',
+    temaSemana: 'empleo', entrevistaHecha: false, viralUsado: false, resultado: null, final: null,
+    stats: { acciones: 0, contrastes: 0, decisiones: 0 }, guia: P.tutorial ? 9 : 0 };
+  REGIONES.forEach(R => {
+    const u = entre(C.indecisosIni[0], C.indecisosIni[1]) + (mod.indecisosExtra || 0);
+    const yo = entre(C.apoyoIniJugador[0], C.apoyoIniJugador[1]) + (leg.includes('base') ? 2 : 0);
+    const w = [0, 1, 2, 3].map(p => p ? (R.fuerte === p ? 1.75 : 1) * entre(0.8, 1.2) : 0), tw = w[1] + w[2] + w[3], resto = 100 - u - yo;
+    G.regs.push({ s: [yo, resto * w[1] / tw, resto * w[2] / tw, resto * w[3] / tw], u, org: 0, sede: false, usos: {} });
+  });
+  G.hist.push(nacional());
+  noticia('Fundas ' + G.nombre + '. Quedan ' + G.semanas + ' semanas para las elecciones en ' + PAIS + '.', '');
+  prepararSemana(true); guardarPartida(); return G;
+}
+function nacional() { // intención de voto nacional, ponderada por escaños; índice 4 = indecisos
+  const out = [0, 0, 0, 0, 0];
+  G.regs.forEach((r, i) => { const e = REGIONES[i].esc / C.escanos; for (let p = 0; p < 4; p++) out[p] += r.s[p] * e; out[4] += r.u * e; });
+  return out;
+}
+function dhondt(votos, escanos) {
+  const out = votos.map(() => 0), val = votos.map(v => v >= C.umbralEscano ? v : 0);
+  for (let k = 0; k < escanos; k++) { let m = -1, mi = 0; val.forEach((v, p) => { const q = v / (out[p] + 1); if (q > m) { m = q; mi = p; } }); out[mi]++; }
+  return out;
+}
+function pesoElectoral(ri) { const r = G.regs[ri]; return 1 + r.org * CONFIG.ORG.bonusElectoral + (G.cred - 50) / 250; }
+function votoEstimado(ri, ruido) { // reparte indecisos y, si ruido>0, añade la incertidumbre del día de la votación
+  const r = G.regs[ri], w = [pesoElectoral(ri), 1, 1, 1], base = r.s.map((s, p) => s * w[p]), tb = base.reduce((a, b) => a + b, 0) || 1;
+  let v = r.s.map((s, p) => Math.max(0, s + r.u * base[p] / tb + (ruido ? (rnd() - rnd()) * ruido : 0) + (ruido && p === 0 && tiene('a4') ? 2 : 0)));
+  const t = v.reduce((a, b) => a + b, 0); return v.map(x => x * 100 / t);
+}
+function proyeccion() { const tot = [0, 0, 0, 0]; REGIONES.forEach((R, i) => dhondt(votoEstimado(i, 0), R.esc).forEach((e, p) => tot[p] += e)); return tot; }
+function lider(ri) { const s = G.regs[ri].s; let m = 0; for (let p = 1; p < 4; p++) if (s[p] > s[m]) m = p; return m; }
+function defensa(ri) { const r = G.regs[ri]; return clamp(r.org * CONFIG.ORG.defensaPorNivel + (r.sede ? A.sede.defensa : 0), 0, CONFIG.ORG.defensaMax); }
+function mover(ri, p, cant) { // suma (o resta) apoyo a un partido en una región; devuelve lo realmente movido
+  const r = G.regs[ri];
+  if (cant <= 0) { const d = Math.min(r.s[p], -cant); r.s[p] -= d; r.u += d; return -d; }
+  const deU = Math.min(r.u, cant * C.cuotaIndecisos), resto = cant - deU, otros = [0, 1, 2, 3].filter(q => q !== p);
+  const tot = otros.reduce((a, q) => a + r.s[q], 0); let tomado = 0;
+  if (tot > 0) otros.forEach(q => { let t = resto * r.s[q] / tot; if (q === 0) t *= 1 - defensa(ri); t = Math.min(t, r.s[q] * 0.5); r.s[q] -= t; tomado += t; });
+  r.u -= deU; r.s[p] += deU + tomado; return deU + tomado;
+}
+function cambiarCred(d) { if (d < 0 && G.mods.credPerdida) d *= G.mods.credPerdida; G.cred = clamp(G.cred + d, 0, 100); return d; }
+function credMult() { const K = CONFIG.CRED; return K.multMin + (K.multMax - K.multMin) * G.cred / 100; }
+function noticia(txt, tipo) { G.noticias.unshift({ s: G.semana, t: txt, k: tipo || '' }); if (G.noticias.length > 80) G.noticias.length = 80; }
+function ingreso() {
+  return C.ingresoSemanal + (G.mods.ingreso || 0) + G.regs.filter(r => r.sede).length * A.sede.ingreso
+    + (tiene('a1') ? 10 : 0) + (G.lider === 'gestor' ? 8 : 0) + (asesor('tesorero') ? 8 : 0);
+}
+function mult(a, ri) { // multiplicador de persuasión de una acción en una región
+  const r = G.regs[ri], R = REGIONES[ri]; let m = credMult();
+  if (R.temas.includes(G.temaSemana)) m *= 1 + C.bonusTemaSemana;
+  if (a === 'mitin') { if (R.temas.some(t => G.banderas.includes(t))) m *= 1 + C.bonusTemaBandera; if (G.lider === 'oradora') m *= 1.3; if (tiene('c2')) m *= 1.25; if (G.mods.mitin) m *= G.mods.mitin; }
+  if (a === 'anuncios' && G.lider === 'comunicador') m *= 1.2;
+  if ((a === 'mitin' || a === 'anuncios') && asesor('analista')) m *= 1.1;
+  if (tiene('m4') && !G.viralUsado) m *= 1.5;
+  m *= Math.pow(C.saturacion, r.usos[a] || 0);
+  m *= clamp(1 - (r.s[0] - C.frenoDesde) / 70, C.frenoMin, 1);
+  return m;
+}
+function coste(a) {
+  const k = { pa: A[a].pa, fondos: A[a].fondos || 0 };
+  if (a === 'anuncios' && tiene('m2')) k.fondos -= 10;
+  if (a === 'sede' && tiene('a2')) { k.pa = 1; k.fondos -= 15; }
+  return k;
+}
+function rivalFuerte(ri) { const s = G.regs[ri].s; let m = 1; if (s[2] > s[m]) m = 2; if (s[3] > s[m]) m = 3; return m; }
+function probEntrevista() { return clamp(A.entrevista.probBase + G.cred * A.entrevista.probPorCred + (tiene('m1') ? 0.15 : 0) + (G.lider === 'comunicador' ? 0.15 : 0), 0.1, 0.95); }
+function efecto(a, ri) { // lo que se espera ganar; se usa para enseñarlo ANTES de decidir y para aplicarlo
+  const r = ri != null ? G.regs[ri] : null;
+  switch (a) {
+    case 'mitin':     return { apoyo: A.mitin.apoyo * mult(a, ri) };
+    case 'puerta':    return { apoyo: (A.puerta.apoyo + (G.lider === 'vecina' ? 1.5 : 0) + (tiene('c1') ? 1 : 0)) * mult(a, ri), org: r.org < C.maxOrg ? A.puerta.org : 0 };
+    case 'anuncios':  return { apoyo: A.anuncios.apoyo * mult(a, ri), vecinas: A.anuncios.vecinas * credMult() * (G.lider === 'comunicador' ? 1.2 : 1) };
+    case 'recaudar':  return { fondos: Math.round(A.recaudar.base + A.recaudar.porApoyo * r.s[0]) };
+    case 'sede':      return { org: Math.min(A.sede.org, C.maxOrg - r.org) };
+    case 'contraste': return { dano: Math.min(A.contraste.dano * credMult(), G.regs[ri].s[rivalFuerte(ri)]), rival: rivalFuerte(ri) };
+    case 'entrevista':return { prob: probEntrevista() };
+    case 'promesa':   return { apoyo: A.promesa.apoyo * credMult() };
+    case 'puentes':   return { rel: A.puentes.rel + (G.lider === 'negociadora' ? 8 : 0) };
+  }
+}
+function puede(a, ri) {
+  if (G.fase !== 'acciones') return { ok: false, motivo: 'Ahora no puedes actuar.' };
+  if ((G.mods.bloqueadas || []).includes(a)) return { ok: false, motivo: 'El reto de esta semana no lo permite.' };
+  const k = coste(a);
+  if (G.pa < k.pa) return { ok: false, motivo: 'Te faltan puntos de acción. Termina la semana.' };
+  if (G.fondos < k.fondos) return { ok: false, motivo: 'Te faltan fondos. Prueba a recaudar.' };
+  if (a === 'sede' && G.regs[ri].sede) return { ok: false, motivo: 'Ya tienes sede en esta región.' };
+  if (a === 'entrevista' && G.entrevistaHecha) return { ok: false, motivo: 'Solo una entrevista por semana.' };
+  if (a === 'promesa' && G.promesas.length >= C.maxPromesas) return { ok: false, motivo: 'Ya has hecho ' + C.maxPromesas + ' promesas.' };
+  if (a === 'contraste' && G.regs[ri].s[rivalFuerte(ri)] < 2) return { ok: false, motivo: 'Aquí no queda rival al que restar.' };
+  return { ok: true };
+}
+function ejecutar(a, ri, extra) { // devuelve { ok, msg, bueno, flota:[{ri, d}] }
+  const ch = puede(a, ri); if (!ch.ok) return ch;
+  const k = coste(a), e = efecto(a, ri), R = ri != null ? REGIONES[ri] : null, r = ri != null ? G.regs[ri] : null;
+  const out = { ok: true, bueno: true, flota: [], msg: '' };
+  G.pa -= k.pa; G.fondos -= k.fondos; G.stats.acciones++;
+  const persuade = ['mitin', 'puerta', 'anuncios'].includes(a);
+  switch (a) {
+    case 'mitin': { const d = mover(ri, 0, e.apoyo); out.flota.push({ ri, d }); out.msg = 'Mitin en ' + R.n + ': ' + sig(d) + ' de apoyo.'; break; }
+    case 'puerta': { const d = mover(ri, 0, e.apoyo); r.org = Math.min(C.maxOrg, r.org + e.org); out.flota.push({ ri, d }); out.msg = 'Puerta a puerta en ' + R.n + ': ' + sig(d) + ' de apoyo' + (e.org ? ' y más organización.' : '.'); break; }
+    case 'anuncios': { const d = mover(ri, 0, e.apoyo); out.flota.push({ ri, d }); VECINAS[ri].forEach(v => out.flota.push({ ri: v, d: mover(v, 0, e.vecinas) })); out.msg = 'Anuncios en ' + R.n + ' y alrededores: ' + sig(d) + ' de apoyo.'; break; }
+    case 'recaudar': { G.fondos += e.fondos; const d = mover(ri, 0, -A.recaudar.desgaste); out.flota.push({ ri, d }); out.msg = 'Recaudas ' + e.fondos + ' fondos en ' + R.n + '.'; break; }
+    case 'sede': { r.sede = true; r.org = Math.min(C.maxOrg, r.org + e.org); out.msg = 'Abres sede en ' + R.n + '. Tu apoyo allí queda mejor defendido.'; break; }
+    case 'contraste': {
+      const p = e.rival, d = Math.min(r.s[p], e.dano); r.s[p] -= d; r.s[0] += d * A.contraste.robo; r.u += d * (1 - A.contraste.robo);
+      G.rel[p] = clamp(G.rel[p] - A.contraste.penaRel, 0, 100); G.stats.contrastes++;
+      out.flota.push({ ri, d: d * A.contraste.robo }); out.msg = 'Contraste con ' + RIVALES[p].n + ' en ' + R.n + ': pierden ' + dec(d) + '.';
+      if (rnd() < A.contraste.riesgo * (tiene('m3') ? 0.5 : 1)) { cambiarCred(-A.contraste.penaCred); G.rel[p] = clamp(G.rel[p] - A.contraste.penaRelFallo, 0, 100); out.bueno = false; out.msg += ' Pero se percibe como juego sucio: pierdes credibilidad.'; }
+      break; }
+    case 'entrevista': {
+      G.entrevistaHecha = true;
+      if (rnd() < e.prob) { REGIONES.forEach((_, i) => out.flota.push({ ri: i, d: mover(i, 0, A.entrevista.exito) })); cambiarCred(A.entrevista.credExito); out.msg = 'Entrevista redonda: subes en todo el país.'; }
+      else { REGIONES.forEach((_, i) => out.flota.push({ ri: i, d: mover(i, 0, A.entrevista.fallo) })); cambiarCred(A.entrevista.credFallo); out.bueno = false; out.msg = 'La entrevista sale mal: pierdes apoyo y credibilidad.'; }
+      break; }
+    case 'promesa': {
+      const t = extra; G.promesas.push({ tema: t, estado: 'viva' });
+      REGIONES.forEach((RR, i) => { if (RR.temas.includes(t)) out.flota.push({ ri: i, d: mover(i, 0, e.apoyo) }); });
+      out.msg = 'Prometes mejoras en ' + TEMAS[t].n.toLowerCase() + '. Te pedirán cuentas.'; break; }
+    case 'puentes': { const p = extra; G.rel[p] = clamp(G.rel[p] + e.rel, 0, 100); out.msg = 'Te reúnes con ' + RIVALES[p].lider + ': la relación mejora.'; break; }
+  }
+  if (persuade) { r.usos[a] = (r.usos[a] || 0) + 1; G.viralUsado = true; }
+  noticia(out.msg, out.bueno ? 'b' : 'm'); guardarPartida(); return out;
+}
+function comprarNodo(id) {
+  for (const rama of Object.values(ARBOL)) { const k = rama.nodos.findIndex(n => n.id === id); if (k < 0) continue;
+    const n = rama.nodos[k]; if (tiene(id)) return { ok: false, motivo: 'Ya lo tienes.' };
+    if (k > 0 && !tiene(rama.nodos[k - 1].id)) return { ok: false, motivo: 'Antes necesitas «' + rama.nodos[k - 1].n + '».' };
+    if (G.inf < n.c) return { ok: false, motivo: 'Te falta influencia. Ganas 1 cada semana.' };
+    G.inf -= n.c; G.arbol[id] = true; if (id === 'm3') cambiarCred(8); if (id === 'a3' && G.fase === 'acciones') G.pa++;
+    noticia('Nueva mejora de campaña: ' + n.n + '.', 'b'); guardarPartida(); return { ok: true, n };
+  } return { ok: false, motivo: '' };
+}
+function contratar(id) {
+  const e = EQUIPO.find(x => x.id === id); if (asesor(id)) return { ok: false, motivo: 'Ya está en tu equipo.' };
+  if (G.equipo.length >= CONFIG.EQUIPO_MAX) return { ok: false, motivo: 'Tu equipo está completo (' + CONFIG.EQUIPO_MAX + ').' };
+  if (G.fondos < e.coste) return { ok: false, motivo: 'Te faltan fondos.' };
+  G.fondos -= e.coste; G.equipo.push(id); noticia(e.n + ' se une a tu equipo.', 'b'); guardarPartida(); return { ok: true, e };
+}
+function prepararSemana(primera) {
+  G.pa = paBase() + (tiene('a3') ? 1 : 0) + (primera && G.legados.includes('madrugador') ? 1 : 0);
+  G.regs.forEach(r => r.usos = {}); G.entrevistaHecha = false; G.viralUsado = false;
+  G.temaSemana = TEMA_IDS[Math.floor(rnd() * TEMA_IDS.length)];
+  G.evento = primera ? null : elegirEvento(); G.fase = G.evento ? 'evento' : 'acciones';
+}
+function elegirEvento() {
+  const vivas = G.promesas.map((p, k) => p.estado === 'viva' ? k : -1).filter(k => k >= 0);
+  if (vivas.length && rnd() < A.promesa.probPrueba) return { tipo: 'promesa', k: vivas[Math.floor(rnd() * vivas.length)] };
+  if (rnd() > C.probEvento) return null;
+  if (G.vistos.length >= EVENTOS.length) G.vistos = [];
+  let idx; do { idx = Math.floor(rnd() * EVENTOS.length); } while (G.vistos.includes(idx));
+  G.vistos.push(idx); return { tipo: 'ev', idx, region: Math.floor(rnd() * REGIONES.length), rival: 1 + Math.floor(rnd() * 3) };
+}
+function eventoActual() { // devuelve el evento listo para mostrar
+  const ev = G.evento; if (!ev) return null;
+  if (ev.tipo === 'promesa') { const t = G.promesas[ev.k].tema, K = A.promesa;
+    return { t: 'Te piden cuentas', x: 'Una periodista pregunta cómo vas a pagar tu promesa sobre ' + TEMAS[t].n.toLowerCase() + '.', ctx: ev, o: [
+      { t: 'Explicar el plan con cifras', coste: { f: K.costeCumplir }, ef: { c: 3 }, promesa: 'firme' },
+      { t: 'Dar largas', ef: { c: -K.penaCred, tema: [t, -K.penaApoyo] }, promesa: 'rota' } ] }; }
+  const E = EVENTOS[ev.idx], rep = s => s.replace('{region}', REGIONES[ev.region].n).replace('{rival}', RIVALES[ev.rival].n);
+  return { t: E.t, x: rep(E.x), o: E.o, ctx: ev };
+}
+function regionSel(sel, ctx) {
+  if (sel === 'ev') return ctx.region;
+  let m = 0; G.regs.forEach((r, i) => { if (sel === 'mejor' ? r.s[0] > G.regs[m].s[0] : r.s[0] < G.regs[m].s[0]) m = i; }); return m;
+}
+function describir(ef, ctx) { // texto de consecuencias, visible antes de decidir
+  const out = [], add = (v, txt) => out.push({ t: sig(v) + ' ' + txt, b: v >= 0 });
+  if (ef.f) add(ef.f, 'fondos'); if (ef.c) add(ef.c, 'credibilidad'); if (ef.n) add(ef.n, 'apoyo en todo el país');
+  if (ef.i) add(ef.i, 'influencia'); if (ef.reg) add(ef.reg[1], 'apoyo en ' + REGIONES[regionSel(ef.reg[0], ctx)].n);
+  if (ef.tema) add(ef.tema[1], 'apoyo donde importa ' + TEMAS[ef.tema[0]].n.toLowerCase());
+  if (ef.org) add(ef.org[1], 'organización en ' + REGIONES[regionSel(ef.org[0], ctx)].n);
+  if (ef.rel) add(ef.rel, 'relación con ' + RIVALES[ctx.rival].corto);
+  if (ef.riv) out.push({ t: RIVALES[ctx.rival].corto + ' ' + sig(ef.riv) + ' en todo el país', b: ef.riv < 0 });
+  return out;
+}
+function aplicar(ef, ctx) {
+  if (ef.f) G.fondos = Math.max(0, G.fondos + ef.f); if (ef.c) cambiarCred(ef.c); if (ef.i) G.inf += ef.i;
+  if (ef.n) REGIONES.forEach((_, i) => mover(i, 0, ef.n));
+  if (ef.reg) mover(regionSel(ef.reg[0], ctx), 0, ef.reg[1]);
+  if (ef.tema) REGIONES.forEach((R, i) => { if (R.temas.includes(ef.tema[0])) mover(i, 0, ef.tema[1]); });
+  if (ef.org) { const r = G.regs[regionSel(ef.org[0], ctx)]; r.org = clamp(r.org + ef.org[1], 0, C.maxOrg); }
+  if (ef.rel) G.rel[ctx.rival] = clamp(G.rel[ctx.rival] + ef.rel, 0, 100);
+  if (ef.riv) REGIONES.forEach((_, i) => mover(i, ctx.rival, ef.riv));
+}
+function probOpcion(o) { return o.prob === 'cred' ? clamp(0.35 + G.cred * 0.005, 0.2, 0.9) : o.prob; }
+function opcionPosible(o) { const k = o.coste || {}; return !((k.f && G.fondos < k.f) || (k.pa && G.pa < k.pa)); }
+function resolverEvento(k) {
+  const E = eventoActual(), o = E.o[k]; if (!opcionPosible(o)) return null;
+  if (o.coste) { if (o.coste.f) G.fondos -= o.coste.f; if (o.coste.pa) G.pa -= o.coste.pa; }
+  let ef = o.ef, suerte = null;
+  if (o.prob != null) { suerte = rnd() < probOpcion(o); ef = suerte ? o.ok : o.ko; }
+  const chips = describir(ef, E.ctx); aplicar(ef, E.ctx);
+  if (o.promesa) G.promesas[E.ctx.k].estado = o.promesa;
+  G.stats.decisiones++; G.evento = null; G.fase = 'acciones';
+  noticia(E.t + ': ' + o.t.toLowerCase() + (suerte === null ? '.' : suerte ? '. Sale bien.' : '. Sale mal.'), suerte === false ? 'm' : '');
+  guardarPartida(); return { suerte, chips, titulo: E.t, opcion: o.t };
+}
+function accionRival(p, res) {
+  const D = dif(), fz = D.fuerza * (G.mods.fuerzaRival || 1), nac = nacional();
+  const jugadorArriba = nac[0] >= Math.max(nac[1], nac[2], nac[3]) - 3;
+  const pAtaque = D.ataque * (jugadorArriba ? 2 : 0.6) * (G.rel[p] >= 60 ? 0.4 : G.rel[p] < 30 ? 1.5 : 1) * (p === 3 ? 1.3 : 1);
+  if (rnd() < pAtaque) {
+    const ri = elegirPeso(G.regs.map((r, i) => REGIONES[i].esc * r.s[0])), r = G.regs[ri];
+    const d = Math.min(r.s[0], fz * entre(2.5, 4) * (1 - defensa(ri))); r.s[0] -= d; r.s[p] += d * 0.5; r.u += d * 0.5;
+    res.push({ p, ri, ataque: true, d: -d });
+  } else {
+    const ri = elegirPeso(G.regs.map((r, i) => { const mx = Math.max(...r.s.filter((_, q) => q !== p)); return REGIONES[i].esc * (REGIONES[i].fuerte === p ? 1.5 : 1) / (1 + Math.abs(r.s[p] - mx) / 10); }));
+    const antes = G.regs[ri].s[0]; mover(ri, p, fz * entre(3, 5)); res.push({ p, ri, ataque: false, d: G.regs[ri].s[0] - antes });
+  }
+}
+function terminarSemana() { // devuelve el resumen de lo ocurrido
+  const antesNac = nacional()[0], antesProy = proyeccion()[0], res = { rivales: [], pasivo: 0 };
+  G.regs.forEach((r, i) => { const g = r.org * CONFIG.ORG.apoyoSemanal * (tiene('c3') ? 2 : 1) + (r.sede && asesor('territorial') ? 1 : 0) + (r.sede && tiene('c4') ? 1 : 0); if (g > 0) res.pasivo += mover(i, 0, g); });
+  for (let p = 1; p <= 3; p++) for (let k = 0; k < dif().accRival; k++) accionRival(p, res.rivales);
+  res.rivales.forEach(x => { if (x.ataque) noticia(RIVALES[x.p].n + ' carga contra ti en ' + REGIONES[x.ri].n + ': ' + sig(x.d) + '.', 'm'); else if (x.d < -0.4) noticia(RIVALES[x.p].n + ' hace campaña en ' + REGIONES[x.ri].n + ' y te quita ' + dec(-x.d) + '.', 'm'); });
+  res.ingreso = ingreso(); G.fondos += res.ingreso;
+  if (asesor('portavoz')) cambiarCred(1.5);
+  if (asesor('negociador')) for (let p = 1; p <= 3; p++) G.rel[p] = clamp(G.rel[p] + 4, 0, 100);
+  G.inf += C.influenciaPorSemana + (G.lider === 'estratega' && G.semana % 3 === 0 ? 1 : 0);
+  G.hist.push(nacional()); res.semana = G.semana; G.semana++;
+  res.dNac = nacional()[0] - antesNac; res.proy = proyeccion()[0]; res.dProy = res.proy - antesProy;
+  if (G.semana > G.semanas) { G.fase = 'eleccion'; celebrarElecciones(); res.fin = true; }
+  else prepararSemana(false);
+  if (G.guia < 9) G.guia = 9;
+  guardarPartida(); return res;
+}
+function celebrarElecciones() {
+  const regs = [], tot = [0, 0, 0, 0];
+  REGIONES.forEach((R, i) => { const v = votoEstimado(i, CONFIG.ELECCION.ruido), e = dhondt(v, R.esc); let g = 0; for (let p = 1; p < 4; p++) if (v[p] > v[g]) g = p; e.forEach((x, p) => tot[p] += x); regs.push({ v, e, g }); });
+  G.resultado = { regs, tot, orden: REGIONES.map((R, i) => i).sort((a, b) => REGIONES[a].esc - REGIONES[b].esc) };
+}
+function opcionesPacto() { // coaliciones mínimas que suman mayoría con rivales dispuestos
+  const tot = G.resultado.tot, umbral = CONFIG.PACTO.umbral - (G.lider === 'negociadora' ? 10 : 0), out = [];
+  const disp = [1, 2, 3].filter(p => G.rel[p] >= umbral && tot[p] > 0);
+  for (let m = 1; m < 8; m++) { const socios = [1, 2, 3].filter(p => m & (1 << (p - 1))); if (!socios.every(p => disp.includes(p))) continue;
+    const suma = tot[0] + socios.reduce((a, p) => a + tot[p], 0); if (suma < C.mayoria) continue;
+    if (socios.some(q => suma - tot[q] >= C.mayoria)) continue; // sobra un socio
+    out.push({ socios, suma, lidera: socios.every(p => tot[0] >= tot[p]) }); }
+  return { opciones: out, umbral };
+}
+function cerrarCampana(pacto) { // pacto: opción elegida o null. Calcula resultado y progreso
+  const tot = G.resultado.tot, yo = tot[0], primera = yo >= Math.max(tot[1], tot[2], tot[3]);
+  let estrellas, titulo, texto;
+  if (yo >= C.mayoria) { estrellas = 3; titulo = 'Mayoría absoluta'; texto = 'Gobiernas en solitario. ' + PAIS + ' ha hablado claro.'; }
+  else if (pacto && pacto.lidera) { estrellas = 2; titulo = 'Gobierno de coalición'; texto = 'Presides el gobierno con ' + pacto.socios.map(p => RIVALES[p].n).join(' y ') + '.'; }
+  else if (pacto) { estrellas = 1; titulo = 'Socio de gobierno'; texto = 'Entras en el gobierno, pero preside otro partido.'; }
+  else if (primera) { estrellas = 1; titulo = 'Primera fuerza, sin gobierno'; texto = 'Has ganado las elecciones, pero los demás pactan entre ellos. Cuida las relaciones la próxima vez.'; }
+  else { estrellas = 0; titulo = 'A la oposición'; texto = 'No ha bastado. Cada campaña enseña algo: prueba otro plan.'; }
+  const gobierna = estrellas >= 2, D = dif(), M = CONFIG.META, nuevosLogros = [];
+  const logro = id => { if (!P.logros[id]) { P.logros[id] = true; nuevosLogros.push(LOGROS.find(l => l.id === id)); } };
+  P.stats.partidas++; if (gobierna) P.stats.gobiernos++; if (estrellas === 3) P.stats.absolutas++; P.stats.mejor = Math.max(P.stats.mejor, yo);
+  const clave = G.lider + '|' + G.dif; P.estrellas[clave] = Math.max(P.estrellas[clave] || 0, estrellas);
+  logro('primera');
+  if (gobierna) { logro('gobierno'); P.lideresGanados[G.lider] = true; if (!G.stats.contrastes) logro('limpio'); if (estrellas === 2) logro('pactista');
+    if (G.promesas.filter(p => p.estado === 'firme').length >= 3) logro('promesas');
+    if (G.dif === 'dificil' || G.dif === 'implacable') logro('dificil'); if (G.dif === 'implacable') logro('implacable');
+    if (Object.keys(P.lideresGanados).length >= 3) logro('coleccion'); }
+  if (estrellas === 3) logro('absoluta');
+  if (G.resultado.regs.every(r => r.g === 0)) logro('pleno');
+  if (G.regs.filter(r => r.sede).length >= 5) logro('sedes5');
+  if (G.cred >= 90) logro('creible');
+  let xp = (yo * M.xpPorEscano + estrellas * M.xpPorEstrella) * D.xp, retoTxt = '';
+  if (G.modo === 'reto' && G.retoSem === semanaId()) {
+    if (P.reto.sem !== G.retoSem) P.reto = { sem: G.retoSem, mejor: 0, superado: false };
+    P.reto.mejor = Math.max(P.reto.mejor, yo);
+    if (gobierna && !P.reto.superado) { P.reto.superado = true; P.rachaSem = P.ultimaSemSuperada === G.retoSem - 1 ? P.rachaSem + 1 : 1; P.ultimaSemSuperada = G.retoSem;
+      xp += M.xpRetoPorRacha * P.rachaSem; retoTxt = 'Reto superado. Racha semanal: ' + P.rachaSem + '.'; logro('reto'); if (P.rachaSem >= 3) logro('racha3'); }
+  }
+  xp += nuevosLogros.length * M.xpLogro; xp = Math.round(xp);
+  const sub = ganarXP(xp);
+  G.final = { estrellas, titulo, texto, xp, nuevosLogros: nuevosLogros.map(l => l.n), sub, retoTxt, escanos: yo, pacto: pacto ? pacto.socios : null };
+  G.fase = 'fin'; guardarPerfil(); guardarPartida(); return G.final;
+}
+function textoCompartir() {
+  const F = G.final, cuad = G.resultado.regs.map(r => r.g === 0 ? '🟨' : RIVALES[r.g].cuad).join('');
+  const modo = G.modo === 'reto' ? 'Reto semanal n.º ' + (G.retoSem - 2900) : MODOS[G.modo].n + ' · ' + dif().nombre;
+  return 'Mayoría · ' + modo + '\n' + ('⭐'.repeat(F.estrellas) || '—') + ' ' + F.titulo + ' · ' + F.escanos + '/' + C.escanos + ' escaños\n' + cuad;
+}
+
+/* ══════════════ INTERFAZ ══════════════ */
+const $app = document.getElementById('app'), $velo = document.getElementById('velo'), $aviso = document.getElementById('aviso');
+const U = { pant: 'inicio', tab: 'mapa', sel: null, prep: null, revelados: 0, temporizador: null, cola: [] };
+let _avisoT = null;
+function aviso(txt) { $aviso.textContent = txt; $aviso.hidden = false; $aviso.style.opacity = 1; clearTimeout(_avisoT); _avisoT = setTimeout(() => { $aviso.style.opacity = 0; setTimeout(() => $aviso.hidden = true, 260); }, 2300); }
+function modal(html) { $velo.innerHTML = '<div class="modal" role="dialog" aria-modal="true">' + html + '</div>'; $velo.hidden = false; }
+function cerrarModal() { $velo.hidden = true; $velo.innerHTML = ''; if (U.cola.length) U.cola.shift()(); }
+function ir(p) { U.pant = p; clearInterval(U.temporizador); pintar(); }
+const chipsHTML = arr => '<div class="chips">' + arr.map(c => '<span class="chip ' + (c.b ? 'ok' : 'mal') + '">' + esc(c.t) + '</span>').join('') + '</div>';
+const faltan = n => n === 1 ? 'Falta 1 punto' : 'Faltan ' + n + ' puntos';
+const cab = (titulo, atras) => '<div class="cab"><button class="atras" data-act="ir" data-p="' + atras + '" aria-label="Volver">‹</button><h2>' + titulo + '</h2></div>';
+
+function pintar() {
+  document.body.classList.toggle('sinanim', !P.ajustes.anim);
+  const f = { inicio: vInicio, modos: vModos, dificultad: vDificultad, partido: vPartido, juego: vJuego, perfil: vPerfil, ajustes: vAjustes, eleccion: vEleccion, resultado: vResultado }[U.pant];
+  $app.innerHTML = f();
+  if (U.pant === 'partido') { const i = document.getElementById('nombre-partido'); if (i) i.addEventListener('input', () => U.prep.nombre = i.value); }
+}
+function hemiciclo() { // adorno del inicio: 101 escaños
+  let s = '', k = 0; const filas = [14, 17, 20, 23, 27];
+  filas.forEach((n, f) => { const R = 52 + f * 14; for (let j = 0; j < n; j++) { const a = Math.PI - (j / (n - 1)) * Math.PI; k++;
+    s += '<circle cx="' + (120 + R * Math.cos(a)).toFixed(1) + '" cy="' + (118 - R * Math.sin(a)).toFixed(1) + '" r="4.2" fill="' + (j / (n - 1) < 0.5 ? '#E8B64A' : 'rgba(248,227,166,.22)') + '"/>'; } });
+  return '<svg class="hemi" viewBox="0 0 240 126" aria-hidden="true">' + s + '<line x1="120" y1="2" x2="120" y2="70" stroke="#fff" stroke-width="1.5" stroke-dasharray="3 3"/></svg>';
+}
+function vInicio() {
+  const pr = progresoNivel(), g = Almacen.leer('partida'), hay = g && g.fase && g.fase !== 'fin', reto = retoActual(), retoOk = pr.nivel >= MODOS.reto.nivel;
+  return '<div class="pant">' +
+    '<div class="logo">MAYORÍA</div><div class="lema">Diez regiones. Pocas acciones cada semana. 51 escaños.</div>' + hemiciclo() +
+    '<button class="cristal caja col" data-act="ir" data-p="perfil" style="text-align:left">' +
+      '<div class="fila"><b class="cre">Nivel ' + pr.nivel + '</b><span class="chip">🔥 ' + P.racha + (P.racha === 1 ? ' día' : ' días') + '</span><span class="chip">📅 ' + P.rachaSem + ' sem.</span></div>' +
+      '<div class="barra"><i style="width:' + pr.pct + '%"></i></div>' +
+      '<div class="peq mut">' + (pr.falta ? faltan(pr.falta) + ' para el nivel ' + (pr.nivel + 1) + (desbloqueosDe(pr.nivel + 1)[0] ? ' · ' + esc(desbloqueosDe(pr.nivel + 1)[0]) : '') : 'Nivel máximo') + '</div></button>' +
+    (hay ? '<button class="btn pri" data-act="continuar">Continuar campaña · semana ' + Math.min(g.semana, g.semanas) + ' de ' + g.semanas + '</button>' : '') +
+    '<button class="btn ' + (hay ? '' : 'pri') + '" data-act="nueva">Nueva campaña</button>' +
+    '<button class="opc ' + (retoOk ? '' : 'bloq') + '" data-act="reto"><span class="ico">📅</span><span class="cre"><b>Reto semanal n.º ' + reto.num + ': ' + reto.n + '</b>' +
+      '<span class="peq mut">' + (retoOk ? esc(reto.d) + ' ' + (P.reto.sem === reto.sem && P.reto.superado ? 'Superado ✔' : 'Quedan ' + diasParaLunes() + ' d.') : 'Se desbloquea en el nivel ' + MODOS.reto.nivel + '.') + '</span></span></button>' +
+    '<div class="rej rej2"><button class="btn" data-act="ir" data-p="perfil">Progreso</button><button class="btn" data-act="ir" data-p="ajustes">Ajustes</button></div>' +
+    '<div class="peq mut" style="text-align:center">Obra de ficción. Partidos, personas y lugares son inventados.</div></div>';
+}
+function vModos() {
+  const l = nivelDe(P.xp);
+  return '<div class="pant">' + cab('Modo de juego', 'inicio') + Object.entries(MODOS).filter(([id, m]) => m.activo || CONFIG.MOSTRAR_MODOS_FUTUROS).map(([id, m]) => {
+    const bloq = !m.activo || l < m.nivel;
+    return '<button class="opc ' + (bloq ? 'bloq' : '') + '" data-act="modo" data-id="' + id + '"><span class="ico">' + m.ico + '</span><span class="cre"><b>' + m.n + '</b><span class="peq mut">' +
+      (id === 'reto' && !bloq ? esc(retoActual().n + ': ' + retoActual().d) : m.activo && bloq ? 'Se desbloquea en el nivel ' + m.nivel + '.' : m.desc) + '</span></span></button>'; }).join('') +
+    '<div class="cristal caja peq mut">Objetivo: llegar a ' + C.mayoria + ' de ' + C.escanos + ' escaños, o sumar mayoría con un pacto.</div></div>';
+}
+function vDificultad() {
+  const l = nivelDe(P.xp);
+  return '<div class="pant">' + cab('Dificultad', 'modos') + Object.entries(CONFIG.DIFICULTAD).map(([id, d]) => {
+    const bloq = l < d.nivel;
+    return '<button class="opc ' + (bloq ? 'bloq' : '') + '" data-act="dif" data-id="' + id + '"><span class="cre"><b>' + d.nombre + ' <span class="chip">×' + dec(d.xp) + ' progreso</span></b><span class="peq mut">' + (bloq ? 'Se desbloquea en el nivel ' + d.nivel + '.' : d.desc) + '</span></span></button>'; }).join('') + '</div>';
+}
+function vPartido() {
+  const S = U.prep, l = nivelDe(P.xp), h = huecosLegado();
+  return '<div class="pant">' + cab('Funda tu partido', S.modo === 'reto' ? 'inicio' : 'dificultad') +
+    '<div class="etq">Quién lo lidera</div><div class="col">' + LIDERES.map(x => { const bloq = l < x.nivel, est = Math.max(0, ...Object.keys(CONFIG.DIFICULTAD).map(d => P.estrellas[x.id + '|' + d] || 0));
+      return '<button class="opc ' + (S.lider === x.id ? 'sel' : '') + (bloq ? ' bloq' : '') + '" data-act="lider" data-id="' + x.id + '"><span class="avatar">' + x.ico + '</span><span class="cre"><b>' + x.n + ' · ' + x.mote + (est ? ' ' + '⭐'.repeat(est) : '') + '</b><span class="peq mut">' + (bloq ? 'Se desbloquea en el nivel ' + x.nivel + '.' : x.desc) + '</span></span></button>'; }).join('') + '</div>' +
+    '<div class="etq">Nombre del partido</div><input class="campo" id="nombre-partido" maxlength="22" value="' + esc(S.nombre) + '" autocomplete="off" aria-label="Nombre del partido">' +
+    '<div class="etq">Color y emblema</div><div class="fila" style="flex-wrap:wrap">' + COLORES.map(c => '<button class="muestra ' + (S.color === c ? 'sel' : '') + '" style="background:' + c + ';color:' + c + '" data-act="color" data-id="' + c + '" aria-label="Color"></button>').join('') + '</div>' +
+    '<div class="fila" style="flex-wrap:wrap">' + EMBLEMAS.map(e => '<button class="emb ' + (S.emblema === e ? 'sel' : '') + '" data-act="emblema" data-id="' + e + '">' + e + '</button>').join('') + '</div>' +
+    '<div class="etq">Tus dos temas bandera</div><div class="peq mut">Tus mítines rinden un ' + Math.round(C.bonusTemaBandera * 100) + ' % más en las regiones a las que les importan.</div>' +
+    '<div class="rej rej2">' + TEMA_IDS.map(t => '<button class="tema ' + (S.banderas.includes(t) ? 'sel' : '') + '" data-act="bandera" data-id="' + t + '">' + TEMAS[t].i + ' ' + TEMAS[t].n + '<br><span class="peq mut">' + REGIONES.filter(R => R.temas.includes(t)).reduce((a, R) => a + R.esc, 0) + ' escaños en juego</span></button>').join('') + '</div>' +
+    (h ? '<div class="etq">Legado (' + S.legados.length + ' de ' + h + ')</div><div class="col">' + LEGADOS.map(x => { const bloq = l < x.nivel;
+      return '<button class="opc ' + (S.legados.includes(x.id) ? 'sel' : '') + (bloq ? ' bloq' : '') + '" data-act="legado" data-id="' + x.id + '"><span class="cre"><b>' + x.n + '</b><span class="peq mut">' + (bloq ? 'Nivel ' + x.nivel + '.' : x.desc) + '</span></span></button>'; }).join('') + '</div>' : '') +
+    (P.bono ? '<div class="cristal caja peq">🔥 Bono por tu racha de ' + P.racha + (P.racha === 1 ? ' día' : ' días') + ': <b>+' + P.bono + ' fondos</b> al empezar.</div>' : '') +
+    '<button class="btn pri" data-act="empezar">Empezar campaña</button></div>';
+}
+
+/* ── Pantalla de juego ── */
+function hexPts(x, y, R) { const p = []; for (let k = 0; k < 6; k++) { const a = Math.PI / 180 * (60 * k - 90); p.push((x + R * Math.cos(a)).toFixed(1) + ',' + (y + R * Math.sin(a)).toFixed(1)); } return p.join(' '); }
+function mapaSVG(datos) { // datos opcionales para la noche electoral: [{g, yo, oculto}]
+  let s = '<line x1="62" y1="262" x2="76" y2="240" stroke="rgba(248,227,166,.4)" stroke-dasharray="3 4" stroke-width="1.5"/>';
+  REGIONES.forEach((R, i) => {
+    const r = G.regs[i], d = datos ? datos[i] : null, g = d ? d.g : lider(i), radio = R.isla ? 36 : HEX_R, [x, y] = R.pos;
+    const ord = r.s.slice().sort((a, b) => b - a), margen = d ? 12 : ord[0] - ord[1];
+    const fill = d && d.oculto ? 'rgba(255,232,190,.05)' : colorDe(g), op = d && d.oculto ? 1 : clamp(0.22 + margen * 0.03, 0.22, 0.72);
+    const yo = d ? (d.oculto ? '?' : d.yo) : dec(r.s[0], 0) + '%';
+    const ic = d ? '' : (r.sede ? '🏛' : '') + (R.temas.includes(G.temaSemana) ? TEMAS[G.temaSemana].i : '');
+    s += '<g class="hex ' + (U.sel === i && !d ? 'sel' : '') + '" data-act="reg" data-i="' + i + '" role="button" aria-label="' + R.n + '">' +
+      '<polygon points="' + hexPts(x, y, radio) + '" fill="' + fill + '" fill-opacity="' + op + '"/>' +
+      '<text class="n" x="' + x + '" y="' + (y - (R.isla ? 14 : 23)) + '">' + R.c[0] + '</text><text class="n" x="' + x + '" y="' + (y - (R.isla ? 4 : 12)) + '">' + R.c[1] + '</text>' +
+      '<text class="p" x="' + x + '" y="' + (y + (R.isla ? 12 : 8)) + '" fill="' + (g === 0 ? '#fff' : 'var(--txt)') + '">' + yo + '</text>' +
+      '<text class="e" x="' + x + '" y="' + (y + (R.isla ? 23 : 21)) + '">' + R.esc + ' esc.</text>' +
+      (ic ? '<text x="' + x + '" y="' + (y + 35) + '" font-size="10">' + ic + '</text>' : '') + '</g>';
+  });
+  return '<svg id="mapa" viewBox="-2 2 277 338" preserveAspectRatio="xMidYMid meet">' + s + '</svg>';
+}
+function flotar(lista) {
+  const svg = document.getElementById('mapa'); if (!svg || !P.ajustes.anim) return;
+  const sum = {}; lista.forEach(f => sum[f.ri] = (sum[f.ri] || 0) + f.d);
+  Object.entries(sum).forEach(([ri, d]) => { if (Math.abs(d) < 0.05) return; const R = REGIONES[ri], t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    t.setAttribute('x', R.pos[0]); t.setAttribute('y', R.pos[1] - 2); t.setAttribute('class', 'flota'); t.setAttribute('fill', d >= 0 ? '#7BD67F' : '#FF7A66'); t.textContent = sig(d);
+    svg.appendChild(t); setTimeout(() => t.remove(), 1350); });
+}
+function segNac(v, conInd) { return '<div class="seg">' + [0, 1, 2, 3].map(p => '<i style="width:' + v[p] + '%;background:' + colorDe(p) + '"></i>').join('') + '</div>'; }
+function hudHTML() {
+  const nac = nacional(), pr = proyeccion(), paMax = Math.max(G.pa, paBase() + (tiene('a3') ? 1 : 0));
+  return '<div class="hud"><div class="f1">' +
+    '<button class="dato" data-act="info" data-k="sem"><b>' + Math.min(G.semana, G.semanas) + '/' + G.semanas + '</b><span>Semana</span></button>' +
+    '<button class="dato" data-act="info" data-k="pa"><b class="pips">' + '●'.repeat(G.pa) + '○'.repeat(Math.max(0, paMax - G.pa)) + '</b><span>Acciones</span></button>' +
+    '<button class="dato" data-act="info" data-k="fondos"><b>' + Math.round(G.fondos) + '</b><span>Fondos</span></button>' +
+    '<button class="dato" data-act="info" data-k="cred"><b>' + Math.round(G.cred) + '</b><span>Credibil.</span></button>' +
+    '<button class="dato" data-act="info" data-k="inf"><b>' + G.inf + '</b><span>Influencia</span></button></div>' +
+    segNac(nac) +
+    '<div class="proy"><span>' + G.emblema + ' <b class="num">' + dec(nac[0]) + ' %</b></span><span>De moda: ' + TEMAS[G.temaSemana].i + ' ' + TEMAS[G.temaSemana].n + '</span><span><b class="num ' + (pr[0] >= C.mayoria ? 'ok' : 'oro') + '">' + pr[0] + '</b> de ' + C.mayoria + ' escaños</span></div></div>';
+}
+function botonAccion(a, ri, nombre, ico) {
+  const ch = puede(a, ri), k = coste(a), e = efecto(a, ri); let ef = '';
+  if (a === 'mitin') ef = sig(e.apoyo) + ' apoyo';
+  if (a === 'puerta') ef = sig(e.apoyo) + (e.org ? ' · +org.' : '');
+  if (a === 'anuncios') ef = sig(e.apoyo) + ' · vecinas ' + sig(e.vecinas);
+  if (a === 'recaudar') ef = '+' + e.fondos + ' fondos';
+  if (a === 'sede') ef = G.regs[ri].sede ? 'Abierta' : 'Defiende · +' + A.sede.ingreso + '/sem';
+  if (a === 'contraste') ef = RIVALES[e.rival].corto + ' −' + dec(e.dano);
+  if (a === 'entrevista') ef = Math.round(e.prob * 100) + ' % de éxito';
+  if (a === 'promesa') ef = sig(e.apoyo) + ' por tema';
+  return '<button class="acc ' + (ch.ok ? '' : 'no') + '" data-act="accion" data-a="' + a + '"><b>' + ico + ' ' + nombre + '</b><span class="ef">' + ef + '</span><span class="co">' + k.pa + ' PA' + (k.fondos ? ' · ' + k.fondos + ' f.' : '') + '</span></button>';
+}
+function panelMapa() {
+  const guia = ['Toca una región del mapa. Empieza por una con muchos escaños.', 'Elige una acción. Cada botón dice lo que ganas y lo que cuesta.', 'Sigue hasta gastar tus acciones. Luego pulsa «Terminar semana».'][G.guia];
+  let h = guia ? '<div class="guia">👉 ' + guia + '</div>' : '';
+  if (U.sel != null) {
+    const i = U.sel, R = REGIONES[i], r = G.regs[i];
+    h += '<div class="reg-cab"><h3>' + R.n + '</h3><span class="peq mut">' + R.esc + ' escaños · Org. ' + '▮'.repeat(r.org) + '▯'.repeat(C.maxOrg - r.org) + '</span></div>' +
+      '<div class="chips">' + R.temas.map(t => '<span class="chip ' + (t === G.temaSemana || G.banderas.includes(t) ? 'ok' : '') + '">' + TEMAS[t].i + ' ' + TEMAS[t].n + (G.banderas.includes(t) ? ' · bandera' : '') + (t === G.temaSemana ? ' · de moda' : '') + '</span>').join('') + '</div>' +
+      '<div class="seg">' + [0, 1, 2, 3].map(p => '<i style="width:' + r.s[p] + '%;background:' + colorDe(p) + '"></i>').join('') + '</div>' +
+      '<div class="chips peq">' + [0, 1, 2, 3].map(p => '<span><i class="punto" style="background:' + colorDe(p) + '"></i>' + (p ? RIVALES[p].corto : 'Tú') + ' ' + dec(r.s[p], 0) + '</span>').join(' ') + '<span class="mut">Indecisos ' + dec(r.u, 0) + '</span></div>' +
+      '<div class="rej rej3">' + botonAccion('mitin', i, 'Mitin', '🎤') + botonAccion('puerta', i, 'Puerta a puerta', '🚪') + botonAccion('anuncios', i, 'Anuncios', '📺') +
+      botonAccion('recaudar', i, 'Recaudar', '💰') + botonAccion('sede', i, 'Abrir sede', '🏛') + botonAccion('contraste', i, 'Contraste', '⚔️') + '</div>';
+  } else if (!guia) h += '<div class="peq mut" style="text-align:center">Toca una región para actuar en ella.</div>';
+  h += '<div class="rej rej3">' + botonAccion('entrevista', null, 'Entrevista', '🎙️') + botonAccion('promesa', null, 'Promesa', '📜') +
+    '<button class="btn fin ' + (G.pa === 0 ? 'pri' : '') + '" data-act="fin-semana">' + (G.semana >= G.semanas ? 'Ir a votar' : 'Terminar semana') + '</button></div>';
+  return h;
+}
+function tabMapa() {
+  return '<div class="mapa-wrap">' + mapaSVG() + '</div><div class="panel">' + panelMapa() + '</div>';
+}
+function tabArbol() {
+  return '<div class="desliza"><div class="fila"><h3 class="cre oro">Árbol de campaña</h3><span class="chip">Influencia: ' + G.inf + '</span></div>' +
+    '<div class="peq mut">Ganas 1 de influencia cada semana. No da para todo: elige una estrategia.</div><div class="rej rej3">' +
+    Object.values(ARBOL).map(rama => '<div class="col"><div class="etq" style="text-align:center">' + rama.i + ' ' + rama.n + '</div>' + rama.nodos.map((n, k) => {
+      const t = tiene(n.id), previo = k === 0 || tiene(rama.nodos[k - 1].id), cls = t ? 'tengo' : previo && G.inf >= n.c ? 'puedo' : previo ? '' : 'lejos';
+      return '<button class="nodo ' + cls + '" data-act="nodo" data-id="' + n.id + '"><b>' + n.n + '</b>' + n.d + '<br><span class="' + (t ? 'ok' : 'oro') + '">' + (t ? 'Activa' : 'Cuesta ' + n.c) + '</span></button>'; }).join('') + '</div>').join('') + '</div></div>';
+}
+function tabGestion() {
+  const sedes = G.regs.filter(r => r.sede).length, est = { viva: 'Pendiente de explicar', firme: 'Cumplida ✔', rota: 'Rota ✖' };
+  return '<div class="desliza"><h3 class="oro">Gestión</h3>' +
+    '<div class="cristal caja col"><div class="etq">Dinero de cada semana</div><table>' +
+      '<tr><td>Cuotas de afiliados</td><td>+' + (C.ingresoSemanal + (G.mods.ingreso || 0)) + '</td></tr>' +
+      (sedes ? '<tr><td>Sedes (' + sedes + ')</td><td>+' + sedes * A.sede.ingreso + '</td></tr>' : '') +
+      (tiene('a1') ? '<tr><td>Tesorería</td><td>+10</td></tr>' : '') + (G.lider === 'gestor' ? '<tr><td>Líder gestor</td><td>+8</td></tr>' : '') + (asesor('tesorero') ? '<tr><td>Tesorera</td><td>+8</td></tr>' : '') +
+      '<tr><td><b>Total</b></td><td><b>+' + ingreso() + '</b></td></tr></table></div>' +
+    '<div class="etq">Equipo (' + G.equipo.length + ' de ' + CONFIG.EQUIPO_MAX + ')</div>' + EQUIPO.map(e => { const t = asesor(e.id);
+      return '<button class="opc ' + (t ? 'sel' : '') + '" data-act="contratar" data-id="' + e.id + '"><span class="avatar">' + e.ico + '</span><span class="cre"><b>' + e.n + '</b><span class="peq mut">' + e.d + '</span></span><span class="chip">' + (t ? 'En el equipo' : e.coste + ' fondos') + '</span></button>'; }).join('') +
+    '<div class="etq">Promesas (' + G.promesas.length + ' de ' + C.maxPromesas + ')</div>' +
+    (G.promesas.length ? G.promesas.map(p => '<div class="noti ' + (p.estado === 'firme' ? 'b' : p.estado === 'rota' ? 'm' : '') + '">' + TEMAS[p.tema].i + ' ' + TEMAS[p.tema].n + ' · ' + est[p.estado] + '</div>').join('') : '<div class="peq mut">Aún no has prometido nada. Una promesa da apoyo rápido, pero te pedirán cuentas.</div>') +
+    '<div class="etq">Programa</div><div class="chips">' + G.banderas.map(t => '<span class="chip ok">' + TEMAS[t].i + ' ' + TEMAS[t].n + '</span>').join('') + '</div></div>';
+}
+function tabNoticias() {
+  let h = '<div class="desliza"><h3 class="oro">Noticias</h3>', sem = -1;
+  G.noticias.forEach(n => { if (n.s !== sem) { sem = n.s; h += '<div class="etq">Semana ' + sem + '</div>'; } h += '<div class="noti ' + n.k + '">' + esc(n.t) + '</div>'; });
+  return h + '</div>';
+}
+function grafica() {
+  const H = G.hist, n = Math.max(H.length - 1, 1), W = 300, Al = 140, max = Math.max(40, ...H.map(h => Math.max(h[0], h[1], h[2], h[3]))) + 4;
+  const x = k => 26 + k * (W - 34) / n, y = v => Al - 16 - v * (Al - 26) / max; let s = '';
+  for (let v = 0; v <= max; v += 10) s += '<line x1="26" x2="' + (W - 8) + '" y1="' + y(v) + '" y2="' + y(v) + '" stroke="rgba(248,227,166,.12)"/><text x="22" y="' + (y(v) + 3) + '" font-size="8" text-anchor="end" fill="#B9A98A">' + v + '</text>';
+  [3, 2, 1, 0].forEach(p => { s += '<polyline fill="none" stroke="' + colorDe(p) + '" stroke-width="' + (p ? 1.6 : 2.8) + '" stroke-linejoin="round" points="' + H.map((h, k) => x(k).toFixed(1) + ',' + y(h[p]).toFixed(1)).join(' ') + '"/>';
+    s += '<circle cx="' + x(H.length - 1) + '" cy="' + y(H[H.length - 1][p]) + '" r="' + (p ? 2.5 : 4) + '" fill="' + colorDe(p) + '"/>'; });
+  s += '<text x="26" y="' + (Al - 3) + '" font-size="8" fill="#B9A98A">Inicio</text><text x="' + (W - 8) + '" y="' + (Al - 3) + '" font-size="8" text-anchor="end" fill="#B9A98A">Semana ' + (H.length - 1) + '</text>';
+  return '<svg class="graf" viewBox="0 0 ' + W + ' ' + Al + '" role="img" aria-label="Evolución de la intención de voto">' + s + '</svg>';
+}
+function barraEscanos(tot) {
+  return '<div class="esc-barra"><div class="seg" style="height:18px">' + [0, 1, 2, 3].map(p => '<i style="width:' + tot[p] / C.escanos * 100 + '%;background:' + colorDe(p) + '"></i>').join('') + '</div><div class="linea"></div></div>' +
+    '<div class="chips peq">' + [0, 1, 2, 3].map(p => '<span><i class="punto" style="background:' + colorDe(p) + '"></i>' + (p ? RIVALES[p].corto : 'Tú') + ' <b class="num">' + tot[p] + '</b></span>').join(' ') + '<span class="mut">Línea: ' + C.mayoria + '</span></div>';
+}
+function tabDatos() {
+  return '<div class="desliza"><h3 class="oro">Estadísticas</h3><div class="cristal caja col"><div class="etq">Intención de voto en ' + PAIS + ' (%)</div>' + grafica() + '</div>' +
+    '<div class="cristal caja col"><div class="etq">Escaños si se votara hoy</div>' + barraEscanos(proyeccion()) + '</div>' +
+    '<div class="cristal caja"><table><tr><th>Región</th><th>Esc.</th><th>Tú</th><th>Primero</th><th>Indec.</th></tr>' +
+    REGIONES.map((R, i) => { const r = G.regs[i], g = lider(i); return '<tr data-act="reg-ir" data-i="' + i + '"><td>' + R.n + '</td><td>' + R.esc + '</td><td>' + dec(r.s[0], 0) + '</td><td><i class="punto" style="background:' + colorDe(g) + '"></i>' + (g ? RIVALES[g].corto : 'Tú') + ' ' + dec(r.s[g], 0) + '</td><td>' + dec(r.u, 0) + '</td></tr>'; }).join('') +
+    '</table><div class="peq mut">Toca una región para ir a ella en el mapa.</div></div></div>';
+}
+function tabLideres() {
+  const nac = nacional(), pr = proyeccion(), umbral = CONFIG.PACTO.umbral - (G.lider === 'negociadora' ? 10 : 0), e = efecto('puentes'), ch = puede('puentes');
+  return '<div class="desliza"><h3 class="oro">Líderes rivales</h3><div class="peq mut">Si no llegas a ' + C.mayoria + ' escaños, solo pactará contigo quien tenga una relación de ' + umbral + ' o más.</div>' +
+    [1, 2, 3].map(p => { const R = RIVALES[p], rel = G.rel[p], et = rel >= umbral ? 'Pactaría contigo' : rel >= 30 ? 'Relación fría' : 'Relación hostil';
+      return '<div class="cristal caja col"><div class="fila"><span class="avatar" style="border-color:' + R.color + ';color:' + R.color + '">' + R.lider[0] + '</span><span class="cre"><b>' + R.lider + '</b><br><span class="peq" style="color:' + R.color + '">' + R.n + '</span></span><span class="num"><b>' + dec(nac[p]) + ' %</b><br><span class="peq mut">' + pr[p] + ' esc.</span></span></div>' +
+        '<div class="peq mut">' + R.corriente + ' ' + R.estilo + '</div>' +
+        '<div class="fila peq"><span class="cre">Relación: <b class="' + (rel >= umbral ? 'ok' : rel < 30 ? 'mal' : '') + '">' + Math.round(rel) + '</b> · ' + et + '</span></div><div class="barra"><i style="width:' + rel + '%"></i></div>' +
+        '<button class="btn ' + (ch.ok ? '' : 'no') + '" data-act="puentes" data-p="' + p + '">Tender puentes · +' + e.rel + ' · 1 PA</button></div>'; }).join('') + '</div>';
+}
+function vJuego() {
+  const tabs = [['mapa', '🗺️', 'Mapa'], ['arbol', '🌳', 'Árbol'], ['gestion', '💼', 'Gestión'], ['noticias', '📰', 'Noticias'], ['datos', '📊', 'Datos'], ['lideres', '👥', 'Líderes']];
+  const cuerpo = { mapa: tabMapa, arbol: tabArbol, gestion: tabGestion, noticias: tabNoticias, datos: tabDatos, lideres: tabLideres }[U.tab]();
+  const puntoArbol = Object.values(ARBOL).some(r => r.nodos.some((n, k) => !tiene(n.id) && (k === 0 || tiene(r.nodos[k - 1].id)) && G.inf >= n.c));
+  return hudHTML() + '<div class="cuerpo">' + cuerpo + '</div><nav class="nav">' + tabs.map(t => '<button class="' + (U.tab === t[0] ? 'sel' : '') + '" data-act="tab" data-t="' + t[0] + '"><i>' + t[1] + '</i>' + t[2] + (t[0] === 'arbol' && puntoArbol ? ' •' : '') + '</button>').join('') +
+    '<button data-act="menu"><i>☰</i>Menú</button></nav>';
+}
+function mostrarEvento() {
+  const E = eventoActual(); if (!E) return;
+  modal('<div class="etq">Decisión de la semana ' + G.semana + '</div><h3>' + esc(E.t) + '</h3><div>' + esc(E.x) + '</div>' + E.o.map((o, k) => {
+    const pos = opcionPosible(o), co = o.coste ? '<span class="chip">Cuesta ' + (o.coste.f ? o.coste.f + ' fondos' : '') + (o.coste.pa ? o.coste.pa + ' PA' : '') + '</span>' : '';
+    let cuerpo;
+    if (o.prob != null) { const pr = Math.round(probOpcion(o) * 100), ok = describir(o.ok, E.ctx), ko = describir(o.ko, E.ctx);
+      cuerpo = '<div class="peq"><b class="ok">' + pr + ' % sale bien:</b></div>' + (ok.length ? chipsHTML(ok) : '<span class="peq mut">Sin consecuencias.</span>') + '<div class="peq"><b class="mal">' + (100 - pr) + ' % sale mal:</b></div>' + (ko.length ? chipsHTML(ko) : '<span class="peq mut">Sin consecuencias.</span>'); }
+    else { const d = describir(o.ef, E.ctx); cuerpo = d.length ? chipsHTML(d) : (co ? '' : '<span class="peq mut">Sin consecuencias.</span>'); }
+    return '<button class="dec ' + (pos ? '' : 'no') + '" data-act="decidir" data-k="' + k + '"><b>' + esc(o.t) + '</b>' + co + cuerpo + (pos ? '' : '<span class="peq mal">No te alcanza.</span>') + '</button>'; }).join(''));
+}
+function mostrarResumen(res) {
+  const riv = res.rivales.filter(x => x.ataque || x.d < -0.4);
+  modal('<div class="etq">Fin de la semana ' + res.semana + '</div><h3>' + (res.dNac >= 0 ? 'Subes ' : 'Bajas ') + dec(Math.abs(res.dNac)) + ' puntos</h3>' +
+    '<div class="rej rej3"><div class="dato"><b class="' + (res.dProy >= 0 ? 'ok' : 'mal') + '">' + res.proy + ' (' + sig(res.dProy, 0) + ')</b><span>Escaños</span></div><div class="dato"><b>+' + res.ingreso + '</b><span>Fondos</span></div><div class="dato"><b>' + sig(res.pasivo) + '</b><span>Por organiz.</span></div></div>' +
+    (riv.length ? '<div class="etq">Lo que han hecho tus rivales</div>' + riv.slice(0, 4).map(x => '<div class="noti m"><i class="punto" style="background:' + RIVALES[x.p].color + '"></i>' + RIVALES[x.p].n + (x.ataque ? ' te ataca en ' : ' te quita votos en ') + REGIONES[x.ri].n + ': ' + sig(x.d) + '</div>').join('') : '<div class="peq mut">Tus rivales no te han quitado apoyo esta semana.</div>') +
+    '<button class="btn pri" data-act="cerrar-resumen">' + (res.fin ? 'Noche electoral' : 'Semana ' + G.semana) + '</button>');
+}
+
+/* ── Noche electoral y resultado ── */
+function parcial() { const t = [0, 0, 0, 0]; G.resultado.orden.slice(0, U.revelados).forEach(i => G.resultado.regs[i].e.forEach((x, p) => t[p] += x)); return t; }
+function vEleccion() {
+  const Rz = G.resultado, vis = Rz.orden.slice(0, U.revelados), fin = U.revelados >= REGIONES.length, t = parcial();
+  const datos = REGIONES.map((R, i) => ({ g: Rz.regs[i].g, yo: Rz.regs[i].e[0] + ' esc.', oculto: !vis.includes(i) }));
+  return '<div class="pant"><div class="cab"><h2>Noche electoral</h2><span class="chip">' + U.revelados + ' de ' + REGIONES.length + '</span></div>' +
+    '<div class="cristal caja col">' + barraEscanos(t) + '</div><div class="mapa-wrap" style="height:240px;flex:none;padding:0">' + mapaSVG(datos) + '</div>' +
+    '<div class="col">' + vis.slice().reverse().map((i, k) => { const r = Rz.regs[i]; return '<div class="noti ' + (r.g === 0 ? 'b' : '') + (k === 0 ? ' revela' : '') + '"><b>' + REGIONES[i].n + '</b> · gana ' + (r.g ? RIVALES[r.g].n : 'tu partido') + ' · te llevas <b>' + r.e[0] + '</b> de ' + REGIONES[i].esc + '</div>'; }).join('') + '</div>' +
+    (fin ? '<button class="btn pri" data-act="tras-recuento">' + (Rz.tot[0] >= C.mayoria ? 'Ver resultado' : 'Buscar pactos') + '</button>' : '<button class="btn" data-act="saltar-recuento">Ver todo ya</button>') + '</div>';
+}
+function arrancarRecuento() {
+  U.revelados = 0; ir('eleccion'); sonido('toque');
+  U.temporizador = setInterval(() => { U.revelados++; if (U.revelados >= REGIONES.length) clearInterval(U.temporizador);
+    const r = G.resultado.regs[G.resultado.orden[U.revelados - 1]]; sonido(r.g === 0 ? 'bien' : 'toque'); if (r.g === 0) Plataforma.vibrar(20); pintar(); }, P.ajustes.anim ? 850 : 250);
+}
+function mostrarPactos() {
+  const { opciones, umbral } = opcionesPacto(), tot = G.resultado.tot;
+  modal('<div class="etq">Negociación</div><h3>' + (C.mayoria - tot[0] === 1 ? 'Te falta 1 escaño' : 'Te faltan ' + (C.mayoria - tot[0]) + ' escaños') + '</h3><div class="peq mut">Solo se sientan a hablar los partidos con relación de ' + umbral + ' o más.</div>' +
+    [1, 2, 3].map(p => '<div class="fila peq"><i class="punto" style="background:' + RIVALES[p].color + '"></i><span class="cre">' + RIVALES[p].n + ' · ' + tot[p] + ' esc.</span><b class="' + (G.rel[p] >= umbral ? 'ok' : 'mal') + '">Relación ' + Math.round(G.rel[p]) + '</b></div>').join('') +
+    (opciones.length ? opciones.map((o, k) => '<button class="dec" data-act="pactar" data-k="' + k + '"><b>Pactar con ' + o.socios.map(p => RIVALES[p].n).join(' y ') + '</b><div class="chips"><span class="chip ok">Suman ' + o.suma + ' escaños</span><span class="chip ' + (o.lidera ? 'ok' : 'mal') + '">' + (o.lidera ? 'Presides tú' : 'Preside tu socio') + '</span></div></button>').join('') : '<div class="noti m">Nadie con quien sumes mayoría quiere pactar contigo.</div>') +
+    '<button class="btn" data-act="pactar" data-k="-1">' + (opciones.length ? 'No pactar' : 'Aceptar el resultado') + '</button>');
+}
+function vResultado() {
+  const F = G.final, pr = progresoNivel();
+  return '<div class="pant"><div class="estrellas">' + '⭐'.repeat(F.estrellas) + '<span style="opacity:.25">' + '⭐'.repeat(3 - F.estrellas) + '</span></div>' +
+    '<h2 style="text-align:center;font-size:1.7rem;color:var(--oro2)">' + F.titulo + '</h2><div style="text-align:center">' + esc(F.texto) + '</div>' +
+    '<div class="cristal caja col">' + barraEscanos(G.resultado.tot) + '</div>' +
+    '<div class="cristal caja col"><div class="fila"><b class="cre">+' + F.xp + ' puntos de progreso</b><span class="chip">Nivel ' + pr.nivel + '</span></div><div class="barra"><i style="width:' + pr.pct + '%"></i></div>' +
+      (F.retoTxt ? '<div class="peq ok">' + F.retoTxt + '</div>' : '') +
+      (F.sub.nuevos.length ? '<div class="etq">Desbloqueado</div>' + F.sub.nuevos.map(n => '<div class="noti b">' + esc(n) + '</div>').join('') : (pr.falta ? '<div class="peq mut">' + faltan(pr.falta) + ' para el nivel ' + (pr.nivel + 1) + '.</div>' : '')) +
+      (F.nuevosLogros.length ? '<div class="etq">Logros nuevos</div><div class="chips">' + F.nuevosLogros.map(n => '<span class="chip ok">🏅 ' + esc(n) + '</span>').join('') + '</div>' : '') + '</div>' +
+    '<div class="cristal caja peq mut">Campaña de ' + G.semanas + ' semanas · ' + G.stats.acciones + ' acciones · ' + G.stats.decisiones + ' decisiones · credibilidad final ' + Math.round(G.cred) + '</div>' +
+    '<button class="btn pri" data-act="nueva">Otra campaña</button><div class="rej rej2"><button class="btn" data-act="compartir">Compartir resultado</button><button class="btn" data-act="ir" data-p="inicio">Inicio</button></div></div>';
+}
+function vPerfil() {
+  const pr = progresoNivel(), total = LIDERES.length * Object.keys(CONFIG.DIFICULTAD).length * 3, tengo = Object.values(P.estrellas).reduce((a, b) => a + b, 0);
+  let prox = ''; for (let l = pr.nivel + 1; l <= CONFIG.META.niveles.length; l++) { const d = desbloqueosDe(l); if (d.length) prox += '<div class="noti"><b>Nivel ' + l + '</b> · ' + d.map(esc).join(' · ') + '</div>'; }
+  return '<div class="pant">' + cab('Progreso', 'inicio') +
+    '<div class="cristal caja col"><div class="fila"><b class="cre">Nivel ' + pr.nivel + '</b><span class="mut peq num">' + P.xp + ' puntos</span></div><div class="barra"><i style="width:' + pr.pct + '%"></i></div></div>' +
+    '<div class="rej rej3"><div class="dato"><b>' + P.stats.partidas + '</b><span>Campañas</span></div><div class="dato"><b>' + P.stats.gobiernos + '</b><span>Gobiernos</span></div><div class="dato"><b>' + P.stats.absolutas + '</b><span>Absolutas</span></div>' +
+    '<div class="dato"><b>' + P.stats.mejor + '</b><span>Mejor result.</span></div><div class="dato"><b>🔥 ' + P.racha + '</b><span>Días seguidos</span></div><div class="dato"><b>📅 ' + P.rachaSem + '</b><span>Retos seguidos</span></div></div>' +
+    '<div class="cristal caja col"><div class="fila"><b class="cre">Colección de estrellas</b><span class="num">' + tengo + ' de ' + total + '</span></div><div class="barra"><i style="width:' + tengo / total * 100 + '%"></i></div><div class="peq mut">Hasta 3 estrellas por cada líder en cada dificultad.</div></div>' +
+    (prox ? '<div class="etq">Próximos desbloqueos</div>' + prox : '') +
+    '<div class="etq">Logros (' + LOGROS.filter(l => P.logros[l.id]).length + ' de ' + LOGROS.length + ')</div>' +
+    LOGROS.map(l => '<div class="noti ' + (P.logros[l.id] ? 'b' : '') + '" style="' + (P.logros[l.id] ? '' : 'opacity:.6') + '"><b>' + (P.logros[l.id] ? '🏅 ' : '') + l.n + '</b> · ' + l.d + '</div>').join('') + '</div>';
+}
+function vAjustes() {
+  const a = P.ajustes, fila = (k, n) => '<button class="opc" data-act="ajuste" data-k="' + k + '"><span class="cre"><b>' + n + '</b></span><span class="chip ' + (a[k] ? 'ok' : '') + '">' + (a[k] ? 'Sí' : 'No') + '</span></button>';
+  return '<div class="pant">' + cab('Ajustes', 'inicio') + fila('sonido', 'Sonido') + fila('vibra', 'Vibración') + fila('anim', 'Animaciones') +
+    '<button class="btn" data-act="como">Cómo se juega</button><button class="btn" data-act="borrar">Borrar todo mi progreso</button>' +
+    '<div class="cristal caja peq mut">Tu progreso se guarda solo en este dispositivo. <a href="index.html" target="_blank" rel="noopener">Política de privacidad</a><br>Mayoría ' + CONFIG.VERSION + ' · Obra de ficción: partidos, personas y lugares son inventados.</div></div>';
+}
+function comoSeJuega(alCerrar) {
+  if (alCerrar) U.cola.push(alCerrar);
+  modal('<h3>Cómo se gana</h3>' +
+    '<div class="noti"><b>Objetivo.</b> Llegar a ' + C.mayoria + ' de ' + C.escanos + ' escaños el día de las elecciones, o sumar mayoría con un pacto.</div>' +
+    '<div class="noti"><b>Cada semana</b> tienes ' + (G ? paBase() : C.paPorSemana.completa) + ' acciones. Toca una región y decide: mitin, puerta a puerta, anuncios, recaudar, abrir sede o contraste.</div>' +
+    '<div class="noti"><b>Antes de pulsar</b> ves lo que vas a ganar y lo que cuesta. Las regiones con más escaños pesan más.</div>' +
+    '<div class="noti"><b>La credibilidad</b> multiplica todo lo que convences. Las promesas rotas y el juego sucio la hunden.</div>' +
+    '<div class="noti"><b>Los rivales también juegan.</b> Si te llevas bien con alguno, podrás pactar al final.</div>' +
+    '<button class="btn pri" data-act="cerrar">Entendido</button>');
+}
+const INFO = {
+  sem: () => 'Quedan ' + Math.max(0, G.semanas - G.semana) + ' semanas después de esta. Luego se vota.',
+  pa: () => 'Puntos de acción: lo que puedes hacer esta semana. Se renuevan al terminarla.',
+  fondos: () => 'Fondos para mítines, anuncios y sedes. Cada semana entran ' + ingreso() + '. El detalle está en Gestión.',
+  cred: () => 'Credibilidad: ahora mismo tus acciones convencen un ' + Math.round(credMult() * 100) + ' % de lo normal.',
+  inf: () => 'Influencia: se gasta en el Árbol. Ganas 1 cada semana.'
+};
+
+/* ── Acciones del jugador ── */
+function tras(res) { // después de una acción: sonido, redibujo y números flotantes
+  if (!res.ok) { aviso(res.motivo); sonido('mal'); return; }
+  sonido(res.bueno ? 'bien' : 'mal'); Plataforma.vibrar(res.bueno ? 15 : 60); if (G.guia === 1) G.guia = 2;
+  pintar(); if (res.flota && res.flota.length) flotar(res.flota); aviso(res.msg);
+}
+function prepararNueva(modo, difi) {
+  const u = P.ultimo || {}, l = nivelDe(P.xp), lid = LIDERES.find(x => x.id === u.lider && l >= x.nivel) ? u.lider : 'oradora';
+  U.prep = { modo, dif: difi, lider: lid, nombre: u.nombre || 'Alianza Horizonte', color: u.color || COLORES[0], emblema: u.emblema || EMBLEMAS[0],
+    banderas: (u.banderas || ['empleo', 'vivienda']).slice(0, 2), legados: (u.legados || []).filter(id => l >= LEGADOS.find(x => x.id === id).nivel).slice(0, huecosLegado()) };
+}
+const ACT = {
+  ir: d => ir(d.p),
+  cerrar: () => cerrarModal(),
+  continuar: () => { G = Almacen.leer('partida'); if (!G) return ir('inicio'); U.sel = null; U.tab = 'mapa';
+    if (G.fase === 'eleccion') { U.revelados = REGIONES.length; ir('eleccion'); } else if (G.fase === 'fin') ir('resultado'); else { ir('juego'); if (G.fase === 'evento') mostrarEvento(); } },
+  nueva: () => ir('modos'),
+  reto: () => { if (nivelDe(P.xp) < MODOS.reto.nivel) return aviso('El reto semanal se desbloquea en el nivel ' + MODOS.reto.nivel + '. Termina una campaña para subir.'); prepararNueva('reto', 'normal'); ir('partido'); },
+  modo: d => { const m = MODOS[d.id]; if (!m.activo) return aviso('Este modo está en preparación.'); if (nivelDe(P.xp) < m.nivel) return aviso('Se desbloquea en el nivel ' + m.nivel + '.');
+    if (d.id === 'reto') return ACT.reto(); U.modoElegido = d.id; ir('dificultad'); },
+  dif: d => { if (nivelDe(P.xp) < CONFIG.DIFICULTAD[d.id].nivel) return aviso('Se desbloquea en el nivel ' + CONFIG.DIFICULTAD[d.id].nivel + '.'); prepararNueva(U.modoElegido, d.id); ir('partido'); },
+  lider: d => { const x = LIDERES.find(y => y.id === d.id); if (nivelDe(P.xp) < x.nivel) return aviso(x.n + ' se desbloquea en el nivel ' + x.nivel + '.'); U.prep.lider = d.id; pintar(); },
+  color: d => { U.prep.color = d.id; pintar(); }, emblema: d => { U.prep.emblema = d.id; pintar(); },
+  bandera: d => { const b = U.prep.banderas, k = b.indexOf(d.id); if (k >= 0) b.splice(k, 1); else { if (b.length >= 2) b.shift(); b.push(d.id); } pintar(); },
+  legado: d => { const x = LEGADOS.find(y => y.id === d.id), L = U.prep.legados, k = L.indexOf(d.id); if (nivelDe(P.xp) < x.nivel) return aviso('Se desbloquea en el nivel ' + x.nivel + '.');
+    if (k >= 0) L.splice(k, 1); else { if (L.length >= huecosLegado()) L.shift(); L.push(d.id); } pintar(); },
+  empezar: () => { const S = U.prep; S.nombre = (S.nombre || '').trim() || 'Alianza Horizonte';
+    if (S.banderas.length < 2) return aviso('Elige dos temas bandera.');
+    P.ultimo = { lider: S.lider, nombre: S.nombre, color: S.color, emblema: S.emblema, banderas: S.banderas, legados: S.legados };
+    nuevaPartida(Object.assign({}, S, { bono: P.bono, seed: S.modo === 'reto' ? retoActual().seed : null })); P.bono = 0; guardarPerfil();
+    U.sel = null; U.tab = 'mapa'; ir('juego'); sonido('fin'); if (!P.tutorial) { P.tutorial = true; guardarPerfil(); comoSeJuega(); } },
+  tab: d => { U.tab = d.t; pintar(); },
+  reg: d => { if (U.pant !== 'juego') return; const i = +d.i; U.sel = U.sel === i ? null : i; if (G.guia === 0) G.guia = 1; sonido('toque'); pintar(); },
+  'reg-ir': d => { U.sel = +d.i; U.tab = 'mapa'; pintar(); },
+  accion: d => { const a = d.a;
+    if (a === 'promesa') { const ch = puede('promesa'); if (!ch.ok) return tras(ch); const e = efecto('promesa'), usados = G.promesas.map(p => p.tema);
+      return modal('<h3>¿Qué prometes?</h3><div class="peq mut">Ganas ' + sig(e.apoyo) + ' de apoyo en las regiones a las que les importa. Más adelante te pedirán cuentas: explicarlo costará ' + A.promesa.costeCumplir + ' fondos; no hacerlo, ' + A.promesa.penaCred + ' de credibilidad.</div><div class="rej rej2">' +
+        TEMA_IDS.filter(t => !usados.includes(t)).map(t => '<button class="tema" data-act="prometer" data-t="' + t + '">' + TEMAS[t].i + ' ' + TEMAS[t].n + '<br><span class="peq mut">' + REGIONES.filter(R => R.temas.includes(t)).map(R => R.c.join(' ')).join(', ') + '</span></button>').join('') + '</div><button class="btn" data-act="cerrar">Cancelar</button>'); }
+    tras(ejecutar(a, a === 'entrevista' ? null : U.sel)); },
+  prometer: d => { cerrarModal(); tras(ejecutar('promesa', null, d.t)); },
+  puentes: d => tras(ejecutar('puentes', null, +d.p)),
+  nodo: d => { const r = comprarNodo(d.id); if (!r.ok) return r.motivo && aviso(r.motivo); sonido('compra'); Plataforma.vibrar(20); pintar(); aviso('Mejora activada: ' + r.n.n + '.'); },
+  contratar: d => { const r = contratar(d.id); if (!r.ok) return aviso(r.motivo); sonido('compra'); pintar(); aviso(r.e.n + ' se une a tu equipo.'); },
+  'fin-semana': () => { if (G.fase !== 'acciones') return;
+    if (G.pa > 0 && !U.confirmaFin) { U.confirmaFin = true; setTimeout(() => U.confirmaFin = false, 2500); return aviso('Te quedan ' + G.pa + ' PA sin usar. Pulsa otra vez para terminar igualmente.'); }
+    U.confirmaFin = false; const res = terminarSemana(); U.resumen = res; sonido('toque'); U.tab = 'mapa'; pintar(); mostrarResumen(res); },
+  'cerrar-resumen': () => { const res = U.resumen; cerrarModal(); if (res && res.fin) return arrancarRecuento(); if (G.fase === 'evento') mostrarEvento(); },
+  decidir: d => { const r = resolverEvento(+d.k); if (!r) return aviso('No te alcanza para esa opción.');
+    sonido(r.suerte === false ? 'mal' : 'bien'); Plataforma.vibrar(r.suerte === false ? 60 : 15); pintar();
+    modal('<div class="etq">' + esc(r.titulo) + '</div><h3>' + (r.suerte === null ? esc(r.opcion) : r.suerte ? 'Sale bien' : 'Sale mal') + '</h3>' + (r.chips.length ? chipsHTML(r.chips) : '<div class="mut">No cambia nada.</div>') + '<button class="btn pri" data-act="cerrar">Seguir</button>'); },
+  info: d => aviso(INFO[d.k]()),
+  menu: () => modal('<h3>Menú</h3><button class="btn" data-act="como">Cómo se juega</button><button class="btn" data-act="salir">Guardar y salir al inicio</button><button class="btn" data-act="abandonar">Abandonar esta campaña</button><button class="btn pri" data-act="cerrar">Seguir jugando</button>'),
+  como: () => comoSeJuega(),
+  salir: () => { cerrarModal(); ir('inicio'); },
+  abandonar: () => modal('<h3>¿Abandonar la campaña?</h3><div>Se perderá esta partida. Tu nivel y tus logros se conservan.</div><button class="btn" data-act="abandonar-si">Sí, abandonar</button><button class="btn pri" data-act="cerrar">No, seguir jugando</button>'),
+  'abandonar-si': () => { Almacen.borrar('partida'); G = null; cerrarModal(); ir('inicio'); },
+  'saltar-recuento': () => { clearInterval(U.temporizador); U.revelados = REGIONES.length; pintar(); },
+  'tras-recuento': () => { if (G.resultado.tot[0] >= C.mayoria) { cerrarCampana(null); sonido('fin'); ir('resultado'); } else mostrarPactos(); },
+  pactar: d => { const k = +d.k, op = k >= 0 ? opcionesPacto().opciones[k] : null; cerrarModal(); const F = cerrarCampana(op); sonido(F.estrellas >= 2 ? 'fin' : 'toque'); ir('resultado'); },
+  compartir: async () => { const txt = textoCompartir(), r = await Plataforma.compartir(txt);
+    if (r === 'copiado') aviso('Resultado copiado. Pégalo donde quieras.');
+    else if (r === 'manual') modal('<h3>Tu resultado</h3><div class="cristal caja" style="white-space:pre-wrap;-webkit-user-select:text;user-select:text">' + esc(txt) + '</div><div class="peq mut">Mantén pulsado el texto para copiarlo.</div><button class="btn pri" data-act="cerrar">Cerrar</button>'); },
+  ajuste: d => { P.ajustes[d.k] = !P.ajustes[d.k]; guardarPerfil(); pintar(); sonido('toque'); },
+  borrar: () => modal('<h3>¿Borrar todo?</h3><div>Se eliminan tu nivel, logros, rachas y la campaña en curso. No se puede deshacer.</div><button class="btn" data-act="borrar-si">Sí, borrar todo</button><button class="btn pri" data-act="cerrar">Cancelar</button>'),
+  'borrar-si': () => { Almacen.borrar('partida'); Almacen.borrar('perfil'); P = perfilNuevo(); G = null; comprobarDia(); cerrarModal(); ir('inicio'); aviso('Progreso borrado.'); }
+};
+document.addEventListener('click', ev => { const el = ev.target.closest('[data-act]'); if (!el) return; const f = ACT[el.dataset.act]; if (f) f(el.dataset); });
+function atras() { // botón «atrás» de Android
+  if (!$velo.hidden) { if ($velo.querySelector('[data-act="cerrar"]')) cerrarModal(); return; }
+  const mapa = { modos: 'inicio', dificultad: 'modos', partido: 'inicio', perfil: 'inicio', ajustes: 'inicio', resultado: 'inicio' };
+  if (U.pant === 'juego') ACT.menu(); else if (mapa[U.pant]) ir(mapa[U.pant]);
+}
+document.addEventListener('backbutton', ev => { ev.preventDefault(); atras(); });
+document.addEventListener('keydown', ev => { if (ev.key === 'Escape') atras(); });
+
+/* ── Arranque ── */
+function arrancar() {
+  const dia = comprobarDia(); ir('inicio');
+  if (dia && P.stats.partidas > 0) modal('<div class="etq">Racha diaria</div><h3>🔥 ' + dia.racha + (dia.racha === 1 ? ' día' : ' días seguidos') + '</h3><div>Tu próxima campaña empieza con <b class="oro">+' + dia.bono + ' fondos</b>.' +
+    (dia.racha < CONFIG.META.bonoDiarioTope ? ' Vuelve mañana y serán ' + CONFIG.META.bonoDiarioFondos * (dia.racha + 1) + '.' : '') + '</div><button class="btn pri" data-act="cerrar">Vamos</button>');
+  try { if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (e) {}
+}
+// Acceso para pruebas y ajuste de equilibrio desde la consola
+window.MAYORIA = { CONFIG, REGIONES, get G() { return G; }, get P() { return P; }, nuevaPartida, ejecutar, puede, efecto, terminarSemana, resolverEvento, eventoActual, opcionPosible,
+  opcionesPacto, cerrarCampana, proyeccion, nacional, comprarNodo, contratar, coste };
+arrancar();
+</script>
+</body>
+</html>
