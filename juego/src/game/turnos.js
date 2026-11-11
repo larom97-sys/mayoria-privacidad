@@ -563,7 +563,7 @@
       S.ms = 1; say(S, 'Hito de la semana ' + S.w + ' superado.');
     }
     if (S.w === h2) {
-      if (a < D.m2 || big < 2) { finish(S, ch, meta, 'Derrota en la semana ' + S.w + ': hacen falta ' + D.m2 + ' % de apoyo medio y 2 regiones por encima del 40 %.', 'hito'); S.res.big = big; S.res.reg = a >= D.m2; return; }   // reg: la media bastaba, fallaron las regiones
+      if (a < D.m2 || (big < 2 && a < D.goal)) { finish(S, ch, meta, 'Derrota en la semana ' + S.w + ': hacen falta ' + D.m2 + ' % de apoyo medio y 2 regiones por encima del 40 %.', 'hito'); S.res.big = big; S.res.reg = a >= D.m2; return; }   // reg: la media del hito bastaba, fallaron las regiones (no hacen falta si la media ya llega a la meta final)
       S.ms = 2; say(S, 'Hito de la semana ' + S.w + ' superado.');
     }
     if (S.w === S.W) {

@@ -791,7 +791,7 @@ function adHtml(){
 function playHtml(){
  const c=ch(),av=T.avg(S),[mw,mt,mr]=nextMile(),pr=Math.min(100,100*(S.w-1)/S.W);
  const goal=T.dOf(S).goal,gp=Math.min(100,av/goal*100),mp=Math.min(100,mt/goal*100),st=S.stab,stc=st>=70?'bad':st>=50?'mid':'ok';
- const nb=S.reg.filter(x=>x.p>=40).length,h2=T.hitos(S)[1],warn=mr&&nb<mr&&S.w>=h2-1&&!S.over?'<p class="ms" style="border-color:#E06A55">'+ic('help')+'<b>'+fill('Atención: al cerrar la semana {0} necesitas 2 regiones por encima del 40 %. Ahora tienes {1}.',[h2,nb])+'</b></p>':'';
+ const nb=S.reg.filter(x=>x.p>=40).length,h2=T.hitos(S)[1],short=mr&&nb<mr&&av<goal+3,warn=short&&S.w>=h2-1&&!S.over?'<p class="ms" style="border-color:#E06A55">'+ic('help')+'<b>'+fill('Atención: al cerrar la semana {0} necesitas 2 regiones por encima del 40 % (ahora tienes {1}) o un {2} % de media.',[h2,nb,goal])+'</b></p>':'';
  const pl=ui.run?0:T.pcLeft(S),dots='<span class="apd" data-noi18n>'+Array.from({length:T.PC},(_,i)=>'<i class="'+(i<pl?'on':'')+'"></i>').join('')+'</span>';
  return '<header class="top2" style="--fc:'+c.themeColor+';--wk:'+(100*S.w/S.W).toFixed(1)+'%">'
   +'<span class="av2"><img src="'+c.avatar+'" alt=""></span>'
@@ -800,7 +800,7 @@ function playHtml(){
   +'<section class="hud2" style="--fc:'+c.themeColor+'">'
   +'<div class="h-main"><div class="h-big" data-k="avg"><b data-noi18n>'+Math.round(av)+'<small>%</small></b><em>Apoyo medio</em></div>'
   +'<div class="h-goal"><span class="gbar"><i style="width:'+gp+'%"></i>'+(mw===S.W?'':'<u style="left:'+mp+'%"></u>')+'<s style="left:100%"></s></span>'
-  +'<small><span>'+(mw===S.W?'Meta':'Hito')+'</span> <b data-noi18n>S'+mw+' · '+mt+' %'+'</b>'+(mr?' <b data-noi18n'+(nb<mr?' style="color:#FF9A8A"':'')+'>'+nb+'/'+mr+' ≥ 40 %</b>':'')+' <span class="gl" data-noi18n>'+ic('avg')+goal+' %</span></small></div></div>'
+  +'<small><span>'+(mw===S.W?'Meta':'Hito')+'</span> <b data-noi18n>S'+mw+' · '+mt+' %'+'</b>'+(mr?' <b data-noi18n'+(short?' style="color:#FF9A8A"':'')+'>'+nb+'/'+mr+' ≥ 40 %</b>':'')+' <span class="gl" data-noi18n>'+ic('avg')+goal+' %</span></small></div></div>'
   +'<div class="h-chips">'
   +'<span class="hc" data-k="week">'+ic('week')+'<b data-noi18n>'+S.w+'<small>/'+S.W+'</small></b></span>'
   +'<span class="hc" data-k="ap">'+ic('act')+dots+'</span>'
@@ -854,7 +854,7 @@ function endHtml(){
  const c=ch(),r=S.res,w=r.won;
  const head=headOf(r);
  const tip=w?'Prueba con otro líder: cada uno juega distinto.':({stab:'Consejo: usa «Control de daños» cuando la estabilidad pase de 70.',cap:'Consejo: no gastes todo el capital en Publicidad.',hito:'Consejo: reparte tus mitines por todas las regiones y no dejes que el rival se haga fuerte.'}[r.kind]);
- if(r.reg)var tipR='Consejo: en el segundo hito no basta la media. Necesitas 2 regiones por encima del 40 % al cerrar la semana, ya con el desgaste: llévalas al 45 % para ir seguro.';
+ if(r.reg)var tipR='Consejo: en el segundo hito necesitas 2 regiones por encima del 40 % al cerrar la semana, ya con el desgaste, o llegar ya a la meta final de media.';
  const first=w&&ui.firstWin,near=!w&&r.kind==='hito'&&r.w===S.W?T.dOf(S).goal-r.avg:0;
  return '<div class="end '+(w?'win':'lose')+'" style="--fc:'+c.themeColor+'">'+card(c)+'<h2 class="hl">'+head+'</h2>'
   +'<div class="sub"><span><em>Semana</em> '+r.w+'</span><span><em>Apoyo medio</em> '+r.avg+' %</span><span><em>Estabilidad</em> '+r.stab+' %</span><span><em>Capital</em> '+r.cap+'</span></div>'
@@ -1013,7 +1013,7 @@ function helpHtml(){
  const row=(i,t,x)=>'<div class="hr"><span class="ai">'+ic(i)+'</span><span class="at"><b>'+t+'</b><small>'+x+'</small></span></div>';
  return '<div class="ov m help"><div class="pp"><h2>Ayuda</h2>'
   +row('avg','Tu objetivo',fill('Llega al {0} % de apoyo medio en la semana {1}. Es la media de todas tus regiones.',[D.goal,W]))
-  +row('clock','Hitos',fill('En la semana {0} necesitas un {1} % de apoyo medio. En la semana {2}, un {3} % y además 2 regiones por encima del 40 %. Se cuenta al cerrar la semana, después del desgaste.',[T.hitos(S||{W:W})[0],D.m1,T.hitos(S||{W:W})[1],D.m2]))
+  +row('clock','Hitos',fill('En la semana {0} necesitas un {1} % de apoyo medio. En la semana {2}, un {3} % y además 2 regiones por encima del 40 %, salvo que tu media ya llegue al {4} %. Se cuenta al cerrar la semana, después del desgaste.',[T.hitos(S||{W:W})[0],D.m1,T.hitos(S||{W:W})[1],D.m2,D.goal]))
   +row('week','Semana',fill('Al terminar cada semana el rival avanza y tu apoyo se enfría un poco.',[]))
   +row('act','Plan de la semana',fill('Cada semana tienes {0} puntos de campaña. Cada acción gasta de 1 a 3 (los puntos de su botón). Apúntalas en tu plan y se ejecutan en orden al cerrar la semana.',[T.PC]))
   +row('plan','Combos','Algunas acciones seguidas se potencian: Negociar y luego Mitin en la misma región, Investigar y luego Debate en la misma región, Publicidad y luego Mitin, o Calmar y luego Negociar.')
