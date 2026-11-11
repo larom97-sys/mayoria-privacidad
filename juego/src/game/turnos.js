@@ -139,7 +139,12 @@
     { t: 'Sequía en Campo Sur: tu mensaje cala (+5 allí) y la estabilidad sube 2.', fx: [E('p', 3, 5), E('s', 0, 2)] },
     { t: 'Pelea de rivales en televisión: el rival de Metrópoli pierde 8.', fx: [E('v', 2, -8)] },
     { t: 'Huelga en el Norte industrial: tu apoyo allí sube 5.', fx: [E('p', 0, 5)] },
-    { t: 'Temporal en la Costa: la gente culpa al gobierno y tú ganas 4 allí.', fx: [E('p', 1, 4)] }
+    { t: 'Temporal en la Costa: la gente culpa al gobierno y tú ganas 4 allí.', fx: [E('p', 1, 4)] },
+    { t: 'Un meme tuyo arrasa en la Costa: +5 de apoyo allí.', fx: [E('p', 1, 5)] },
+    { t: 'Feria agrícola en Frontera Este: te reciben con jamón y ganas 5 allí.', fx: [E('p', 5, 5)] },
+    { t: 'Tu rival se equivoca de ciudad en un mitin: pierde 6 en Campo Sur.', fx: [E('v', 3, -6)] },
+    { t: 'Un donante anónimo aparece con un sobre: +8 de capital.', fx: [E('c', 0, 8)] },
+    { t: 'Semana sin escándalos: la estabilidad baja 4.', fx: [E('s', 0, -4)] }
   ];
 
   const DEC_PLATO = {
@@ -191,6 +196,41 @@
           fg: [E('p', 4, 10), E('p', 1, 6)], fb: [E('p', ALL, -1)], lg: L(2, 'La moda pasa: -3 de apoyo en Universidad.', [E('p', 4, -3)]) },
         { n: 'Ignorarlo', p: 0.9, g: '+1 de apoyo en todas.', b: 'Pierdes la ocasión: -2 de apoyo en todas.',
           fg: [E('p', ALL, 1)], fb: [E('p', ALL, -2)] }
+      ] },
+    { t: 'Te invitan a un pódcast de tres horas', x: 'El presentador no corta nada. Nada.',
+      o: [
+        { n: 'Ir y hablar de todo', p: 0.55, g: '+7 de apoyo en Universidad y +4 en Metrópoli.', b: 'Sueltas una barbaridad en la hora tres: -4 de apoyo en todas.',
+          fg: [E('p', 4, 7), E('p', 2, 4)], fb: [E('p', ALL, -4)] },
+        { n: 'Mandar un vídeo de saludo', p: 0.85, g: '+2 de apoyo en todas.', b: 'Nadie lo ve: -2 de capital.',
+          fg: [E('p', ALL, 2)], fb: [E('c', 0, -2)] }
+      ] },
+    { t: 'Inauguración de una rotonda', x: 'Te ofrecen cortar la cinta en Campo Sur. La rotonda no lleva a ningún sitio.',
+      o: [
+        { n: 'Cortar la cinta', p: 0.7, g: 'Sales en todas las fotos: +8 de apoyo en Campo Sur.', b: 'La foto se hace meme: -3 de apoyo en todas.',
+          fg: [E('p', 3, 8)], fb: [E('p', ALL, -3)] },
+        { n: 'Proponer un hospital en su lugar (-6 de capital)', p: 0.6, g: 'La idea gusta: +4 de apoyo en todas.', b: 'Nadie se lo cree: +3 de estabilidad.',
+          fg: [E('c', 0, -6), E('p', ALL, 4)], fb: [E('c', 0, -6), E('s', 0, 3)], lg: L(2, 'El hospital sale en los telediarios: +3 de apoyo en Campo Sur y Frontera Este.', [E('p', 3, 3), E('p', 5, 3)]) }
+      ] },
+    { t: 'Huelga de tu propio equipo', x: 'Tus voluntarios piden cobrar algo. Lo que sea.',
+      o: [
+        { n: 'Pagarles (-10 de capital)', p: 0.9, g: 'Vuelven con ganas: +4 de apoyo en todas.', b: 'Piden el doble: pierdes 15 de capital.',
+          fg: [E('c', 0, -10), E('p', ALL, 4)], fb: [E('c', 0, -15)] },
+        { n: 'Darles una charla motivacional', p: 0.5, g: 'Funciona: +3 de apoyo en todas.', b: 'Se van a casa: -4 de apoyo en todas y +3 de estabilidad.',
+          fg: [E('p', ALL, 3)], fb: [E('p', ALL, -4), E('s', 0, 3)] }
+      ] },
+    { t: 'Un famoso quiere apoyarte', x: 'Un cantante de éxito ofrece subir contigo al escenario. Tiene opiniones sobre todo.',
+      o: [
+        { n: 'Subirlo al escenario', p: 0.6, g: '+6 de apoyo en Universidad y +6 en Costa.', b: 'Opina de más: -3 de apoyo en todas y +3 de estabilidad.',
+          fg: [E('p', 4, 6), E('p', 1, 6)], fb: [E('p', ALL, -3), E('s', 0, 3)], lg: L(2, 'Su gira lleva tu logo: +2 de apoyo en todas.', [E('p', ALL, 2)]) },
+        { n: 'Agradecer y seguir solo', p: 0.9, g: '+1 de apoyo en todas.', b: 'Se va con tu rival: el rival crece 3 en todas.',
+          fg: [E('p', ALL, 1)], fb: [E('v', ALL, 3)] }
+      ] },
+    { t: 'Promesa imposible', x: 'Tu asesor propone prometer tren de alta velocidad a todos los pueblos.',
+      o: [
+        { n: 'Prometerlo', p: 0.65, g: '+6 de apoyo en Campo Sur y +6 en Frontera Este.', b: 'Un ingeniero hace las cuentas en directo: -3 de apoyo en todas.',
+          fg: [E('p', 3, 6), E('p', 5, 6)], fb: [E('p', ALL, -3)], lg: L(3, 'Te preguntan por el tren: -2 de apoyo en todas y +3 de estabilidad.', [E('p', ALL, -2), E('s', 0, 3)]) },
+        { n: 'Prometer arreglar las carreteras', p: 0.85, g: '+2 de apoyo en todas.', b: 'Suena a poco: -1 de apoyo en todas.',
+          fg: [E('p', ALL, 2)], fb: [E('p', ALL, -1)] }
       ] }
   ];
   const POOL_BASE = [5, 7, 9];            // semanas con decisión (además del plató en la semana 3)

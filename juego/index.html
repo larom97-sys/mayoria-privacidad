@@ -509,6 +509,7 @@ h1,h2,h3{font-family:var(--disp);font-weight:400;margin:0}
 <script src="src/i18n/i18n.js"></script>
 <script src="src/i18n/textos.js"></script>
 <script src="src/i18n/textos2.js"></script>
+<script src="src/i18n/textos3.js"></script>
 <script>
 'use strict';
 const $=id=>document.getElementById(id), I18=window.I18N, T=window.TURN, CH=window.CHARACTERS||[];
@@ -840,7 +841,9 @@ function headOf(r){
  if(r.won)return fill('Mayoría alcanzada con un {0} %: el país cree que tú eres la mayoría',[r.avg]);
  return fill(({stab:'Semana {0}: la estabilidad llega al {1} % y la democracia dice basta',cap:'Semana {0}: la campaña cierra con {1} de capital y una deuda con la imprenta'}[r.kind])||'Semana {0}: te vota el {1} % y el resto tenía cosas mejores que hacer',[r.w,r.kind==='cap'?r.cap:r.kind==='stab'?r.stab:r.avg]);
 }
-function shareTxt(){
+/* resultado para compartir: una fila de cuadrados por región (verde ganas, rojo gana el rival) y la racha */
+function shareTxt(){return shareBase()+'\n'+S.reg.map(x=>x.p>x.r+.5?'🟩':x.r>x.p+.5?'🟥':'🟨').join('')+(S.daily&&dStreak()>1?' 🔥'+dStreak():'')}
+function shareBase(){
  const r=S.res,t=s=>I18.tr(s);
  return S.daily&&ui.dres?'Mayoría · '+t('Reto diario')+' '+ui.dres.day+' · '+ui.dres.sc+' '+t('puntos')+' · '+t(r.won?'Victoria':'Derrota')+' · '+ch().name+' · '+t('Apoyo medio')+' '+r.avg+' %'
   :'Mayoría · '+t(headOf(r))+' · '+ch().name+' · '+t(T.dOf(S).n)+' · '+t('Semana')+' '+r.w+' · '+t('Apoyo medio')+' '+r.avg+' % · '+t('Estabilidad')+' '+r.stab+' % · '+t('Capital')+' '+r.cap;
@@ -849,11 +852,11 @@ function endHtml(){
  const c=ch(),r=S.res,w=r.won;
  const head=headOf(r);
  const tip=w?'Prueba con otro líder: cada uno juega distinto.':({stab:'Consejo: usa «Control de daños» cuando la estabilidad pase de 70.',cap:'Consejo: no gastes todo el capital en Publicidad.',hito:'Consejo: reparte tus mitines por todas las regiones y no dejes que el rival se haga fuerte.'}[r.kind]);
- const first=w&&ui.firstWin;
+ const first=w&&ui.firstWin,near=!w&&r.kind==='hito'&&r.w===S.W?T.dOf(S).goal-r.avg:0;
  return '<div class="end '+(w?'win':'lose')+'" style="--fc:'+c.themeColor+'">'+card(c)+'<h2 class="hl">'+head+'</h2>'
   +'<div class="sub"><span><em>Semana</em> '+r.w+'</span><span><em>Apoyo medio</em> '+r.avg+' %</span><span><em>Estabilidad</em> '+r.stab+' %</span><span><em>Capital</em> '+r.cap+'</span></div>'
   +(S.daily&&ui.dres?'<div class="dl-end"><em>Reto diario</em> <span data-noi18n>'+ui.dres.day+'</span><b><span data-noi18n>'+ui.dres.sc+'</span> <span>puntos</span></b><small>'+(ui.dres.off?'Intento oficial: es tu marca de hoy.':'Entrenamiento: no cuenta para tu marca.')+'</small>'+(ui.dres.bonus?'<small><span>Premio de racha:</span> <b data-noi18n>+'+ui.dres.bonus+'</b> <span>de capital para tu próxima partida</span>'+(ui.dres.wk?' <span>Objetivo semanal cumplido.</span>':'')+'</small>':'')+'</div>':'')
-  +'<p class="tip">'+tip+'</p>'+(first?'<p class="unl">Has desbloqueado el Debate televisado para tus próximas partidas.</p>':'')+newsHtml()
+  +(near>0&&near<=6?'<p class="unl">'+(near===1?'Te has quedado a 1 punto de la meta. La próxima es tuya.':fill('Te has quedado a {0} puntos de la meta. La próxima es tuya.',[near]))+'</p>':'')+'<p class="tip">'+tip+'</p>'+(first?'<p class="unl">Has desbloqueado el Debate televisado para tus próximas partidas.</p>':'')+newsHtml()
   +'<div class="b2"><button class="tsb pri" data-a="again">JUGAR OTRA VEZ</button><button class="tsb" data-a="share">COMPARTIR RESULTADO</button><button class="tsb" data-a="copy">COPIAR TEXTO</button></div></div>';
 }
 /* noche electoral: las regiones se descubren de menor a mayor apoyo y la media se va formando */
@@ -1066,12 +1069,19 @@ function shopHtml(){
  }
  return h+'</div>';
 }
+/* datos de la prueba: lo que hay que mirar con los testers (se guardan en el dispositivo) */
+function statsHtml(){
+ const s=META.st;if(!s)return '';const dd=Object.keys(s.days),t0=new Date(s.first+'T00:00'),df=k=>Math.round((new Date(k+'T00:00')-t0)/864e5);
+ const d1=dd.some(k=>df(k)===1),d7=dd.some(k=>df(k)>=7),c=(l,v)=>'<span class="chip"><span>'+l+'</span> <b data-noi18n>'+v+'</b></span>';
+ return '<div class="sl"><b>Datos de la prueba</b><div class="chips" style="margin-top:6px">'+c('Días jugados',dd.length)+c('Sesiones',s.ses)+c('Acciones por sesión',(s.acts/Math.max(1,s.ses)).toFixed(1))+c('Partidas',META.games||0)
+  +'<span class="chip'+(d1?' good':'')+'">'+(d1?'Volvió al día siguiente: sí':'Volvió al día siguiente: no')+'</span><span class="chip'+(d7?' good':'')+'">'+(d7?'Volvió a la semana: sí':'Volvió a la semana: no')+'</span></div></div>';
+}
 function menuHtml(){
  const inGame=ui.screen==='play'&&S&&!S.over;
  return '<div class="ov m"><div class="pp"><h2>Opciones</h2><div class="row2"><button class="btn" data-a="help">Cómo se juega</button></div>'+shopHtml()
   +'<div class="sl"><b>Idioma</b>'+langPicker()+'</div>'
   +'<div class="sl"><b>Sonido y vibración</b><div class="row2"><button class="btn" data-a="mute">'+(SFX.muted?'<b>🔇</b> Activar sonido':'<b>🔊</b> Silenciar')+'</button><button class="btn" data-a="hap">'+(SFX.haptics?'Vibración: sí':'Vibración: no')+'</button><button class="btn" data-a="fast">'+(META.fast?'Ritmo rápido: sí':'Ritmo rápido: no')+'</button></div></div>'
-  +(ui.err?'<p class="small" style="font-weight:800">'+esc(ui.err)+'</p>':'')
+  +statsHtml()+(ui.err?'<p class="small" style="font-weight:800">'+esc(ui.err)+'</p>':'')
   +'<div class="row2" style="margin-top:12px">'+(inGame?'<button class="btn" data-a="quit">Abandonar partida</button>':'')+'<button class="btn" data-a="close">Cerrar</button></div></div></div>';
 }
 
@@ -1207,15 +1217,15 @@ async function act(a,v){
   if(ui.run)return;const c=ch();
   if(!T.unlockedOf(MM(),v)){toast('Debate televisado se desbloquea al ganar una partida.');return}
   const why=T.planWhy(S,c,MM(),v);if(why){toast(why);snd('alert');return}
-  const cb=T.comboNext(S,v,S.sel);T.planAdd(S,c,MM(),v);ui.emptyOk=false;
+  const cb=T.comboNext(S,v,S.sel);T.planAdd(S,c,MM(),v);ui.emptyOk=false;if(META.st)META.st.acts++;
   snd(cb?'buy':'pop');haptic('LIGHT');if(cb)toast('Combo · '+cb.n);
   saveGame();render();return}
  if(a==='pdel'){if(ui.run)return;T.planDel(S,+v);snd('tap');saveGame();render();return}
  if(a==='endw'){if(ui.run||S.dec||S.over)return;
   if(!(S.plan||[]).length&&!ui.emptyOk){ui.emptyOk=true;toast('Tu plan está vacío. Pulsa otra vez para cerrar la semana sin hacer nada.');return}
-  ui.emptyOk=false;runPlan();return}
+  ui.emptyOk=false;saveMeta();runPlan();return}
  if(a==='dec'){ui.dsel=null;ui.dkey=null;const c=ch(),d0=S.dec,j=+v,key=d0.t+'|'+j,nm=d0.o[j].n;ui.snap=ui.wsnap||snapOf();
-  T.pickDec(S,c,MM(),j,rnd);
+  T.pickDec(S,c,MM(),j,rnd);if(META.st)META.st.acts++;
   const ln=(S.rep||[]).find(l=>/^(Acierto|Fallo): /.test(l));
   if(ln&&!S.over)ui.scene={k:key,nm,ok:/^Acierto/.test(ln),tx:ln.replace(/^(Acierto|Fallo): /,''),run:false};
   snd('pop');afterAct();return}
@@ -1279,6 +1289,7 @@ async function boot(){
   if(!CH.length)throw new Error('No se pudieron cargar los líderes.');
   setNames();
   try{const m=await Store.get('mi_meta');if(m)META=Object.assign(META,JSON.parse(m))}catch(e){}
+  {const st=META.st=META.st||{first:dayKey(),days:{},ses:0,acts:0};st.days[dayKey()]=1;st.ses++;saveMeta()}   /* datos de la prueba: días, sesiones y acciones */
   if(!Array.isArray(META.dw))META.dw=[0,0,0,0];if(!META.ach)META.ach={};if(!Array.isArray(META.sel))META.sel=[];
   ui.diff=T.diffOpen(META,META.lastD)?META.lastD:1;
   const first=CH.findIndex(c=>c.id==='populista');ui.lead=first<0?0:first;
