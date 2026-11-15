@@ -6,358 +6,309 @@
 <title>Gestión de consulta fisio</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="description" content="Hoja de gestión para fisioterapeutas y clínicas: pacientes, sesiones, cobros y resumen de la consulta, calculado solo.">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,400..900;1,62..125,400..900&family=Newsreader:ital,opsz,wght@1,6..72,400;1,6..72,500&family=JetBrains+Mono:wght@400;500;700&display=swap">
 <style>
-/* Layout: una hoja viva como protagonista. Hero partido (promesa a la izquierda, hoja interactiva a la derecha);
-   debajo, bandas tranquilas a una columna ancha con rejillas de 2 y 4. El único gesto fuerte es la hoja. */
+/* Layout: cartel deportivo, no folleto. Titular condensado a todo el ancho; la hoja real sujeta a la página
+   con vendaje neuromuscular (tiras azul cobalto y beige). El vendaje es el único adorno y hace de etiqueta de sección. */
 :root{
-  --bg:#F2F5F4; --surface:#FFFFFF; --band:#E6ECEA;
-  --ink:#0D2B30; --muted:#51696C; --line:#CBD7D5;
-  --deep:#0E3B43; --on-deep:#EAF3F1; --on-deep-muted:#A9C4C2; --deep-line:#2A5961;
-  --accent:#C98A12; --accent-ink:#1F1602; --accent-soft:#F6E7C4;
-  --ok:#1E7A55; --ok-bg:#DDF0E6; --off:#5E6E70; --off-bg:#E4EAE9; --bad:#B23A32; --bad-bg:#F7DFDC;
-  --display:"Bricolage Grotesque","Avenir Next","Segoe UI",sans-serif;
-  --body:"Instrument Sans","Segoe UI",system-ui,sans-serif;
-  --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,monospace;
-  --r:14px;
+  --paper:#ECEEF1; --surface:#FFFFFF; --ink:#101318; --muted:#555D68; --line:#C9CED6; --cell:#F4F5F7;
+  --tape:#1B4FD6; --on-tape:#FFFFFF; --on-tape-soft:#C9D8FF; --beige:#D8BC98; --on-beige:#1C1408;
+  --block:#101318; --on-block:#ECEEF1; --on-block-soft:#A2A9B4; --block-line:#30353D;
+  --ok:#157347; --ok-bg:#DCF1E4; --off:#5B6470; --off-bg:#E3E6EA; --bad:#B3261E; --bad-bg:#F9DEDC; --warn:#7A5600; --warn-bg:#FBEBC2;
+  --cond:"Archivo","Arial Narrow","Helvetica Neue",Arial,sans-serif;
+  --body:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --serif:"Newsreader",Georgia,"Times New Roman",serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#081E22; --surface:#0F2C32; --band:#0B252A;
-    --ink:#E8F1EF; --muted:#9DB6B5; --line:#234850;
-    --deep:#123F47; --on-deep:#EAF3F1; --on-deep-muted:#A9C4C2; --deep-line:#2F636C;
-    --accent:#E5AC3A; --accent-ink:#1F1602; --accent-soft:#3A2E10;
-    --ok:#6FD3A6; --ok-bg:#143B2E; --off:#A5B5B6; --off-bg:#1D3A40; --bad:#F09A92; --bad-bg:#47211E;
+    --paper:#0D0F13; --surface:#171A20; --ink:#ECEEF1; --muted:#9AA2AE; --line:#2C313A; --cell:#1E222A;
+    --tape:#3566F0; --on-tape:#FFFFFF; --on-tape-soft:#D3DEFF; --beige:#CDB08B; --on-beige:#1C1408;
+    --block:#1A1D24; --on-block:#ECEEF1; --on-block-soft:#A2A9B4; --block-line:#343A45;
+    --ok:#74D6A0; --ok-bg:#153527; --off:#A9B1BC; --off-bg:#262B33; --bad:#F2A19B; --bad-bg:#45201D; --warn:#F0CD72; --warn-bg:#3D3110;
     color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#081E22; --surface:#0F2C32; --band:#0B252A;
-  --ink:#E8F1EF; --muted:#9DB6B5; --line:#234850;
-  --deep:#123F47; --on-deep:#EAF3F1; --on-deep-muted:#A9C4C2; --deep-line:#2F636C;
-  --accent:#E5AC3A; --accent-ink:#1F1602; --accent-soft:#3A2E10;
-  --ok:#6FD3A6; --ok-bg:#143B2E; --off:#A5B5B6; --off-bg:#1D3A40; --bad:#F09A92; --bad-bg:#47211E;
+  --paper:#0D0F13; --surface:#171A20; --ink:#ECEEF1; --muted:#9AA2AE; --line:#2C313A; --cell:#1E222A;
+  --tape:#3566F0; --on-tape:#FFFFFF; --on-tape-soft:#D3DEFF; --beige:#CDB08B; --on-beige:#1C1408;
+  --block:#1A1D24; --on-block:#ECEEF1; --on-block-soft:#A2A9B4; --block-line:#343A45;
+  --ok:#74D6A0; --ok-bg:#153527; --off:#A9B1BC; --off-bg:#262B33; --bad:#F2A19B; --bad-bg:#45201D; --warn:#F0CD72; --warn-bg:#3D3110;
   color-scheme:dark;
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:400 17px/1.6 var(--body);-webkit-font-smoothing:antialiased}
-.wrap{max-width:1140px;margin:0 auto;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
-h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;letter-spacing:-.02em}
-h1{font-size:clamp(2.5rem,6vw,4.4rem);line-height:1;font-weight:700}
-h2{font-size:clamp(1.8rem,3.6vw,2.7rem);line-height:1.08;font-weight:600}
-h3{font-size:1.2rem;line-height:1.25;font-weight:600;letter-spacing:-.01em}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 17px/1.55 var(--body);-webkit-font-smoothing:antialiased;overflow-x:clip}
+.wrap{max-width:1200px;margin:0 auto;padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px))}
 p{margin:0}
 a{color:inherit}
-.eyebrow{font:500 .78rem/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
-.lead{font-size:1.15rem;color:var(--muted);max-width:34em}
-:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
+:focus-visible{outline:3px solid var(--tape);outline-offset:3px}
+.big{font-family:var(--cond);font-stretch:62%;font-weight:800;text-transform:uppercase;line-height:.88;letter-spacing:-.01em;margin:0;text-wrap:balance}
+h1.big{font-size:clamp(3.1rem,13.2vw,10.2rem)}
+h2.big{font-size:clamp(2.5rem,7.4vw,5.6rem)}
+.it{font-family:var(--serif);font-style:italic;font-weight:400;text-transform:none;letter-spacing:-.02em;font-stretch:100%}
+.muted{color:var(--muted)}
 
-/* header */
-.top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-block:22px}
-.brand{display:flex;align-items:center;gap:10px;font:600 1.05rem/1 var(--display);text-decoration:none}
-.brand svg{flex:none}
-.top nav{display:flex;gap:26px;align-items:center;font-size:.95rem}
-.top nav a{text-decoration:none;color:var(--muted)}
-.top nav a:hover{color:var(--ink)}
-@media (max-width:720px){.top nav a.link{display:none}}
+/* vendaje */
+.tape{background-color:var(--tape);background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.09) 0 1px,transparent 1px 4px),repeating-linear-gradient(0deg,rgba(0,0,0,.07) 0 1px,transparent 1px 4px);border-radius:7px;box-shadow:0 1px 0 rgba(0,0,0,.18),0 6px 14px -8px rgba(0,0,0,.5)}
+.tape.beige{background-color:var(--beige)}
+.tag{display:inline-block;padding:7px 16px 6px;font:700 .74rem/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--on-beige);transform:rotate(-1.6deg);border-radius:4px}
+.tag.blue{color:var(--on-tape)}
 
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:14px 22px;border-radius:999px;border:1px solid transparent;font:600 1rem/1 var(--body);text-decoration:none;cursor:pointer;transition:transform .15s ease,background .15s ease}
-.btn-primary{background:var(--accent);color:var(--accent-ink)}
-.top nav a.btn-primary{color:var(--accent-ink)}
-.btn-primary:hover{transform:translateY(-1px)}
-.btn-ghost{border-color:var(--line);color:var(--ink);background:transparent}
-.btn-ghost:hover{background:var(--band)}
-.btn-sm{padding:10px 16px;font-size:.92rem}
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding-block:20px 0;font:500 .82rem/1.2 var(--mono);letter-spacing:.04em;text-transform:uppercase}
+.top a{text-underline-offset:4px}
+
+.btn{display:inline-block;background:var(--ink);color:var(--paper);font:800 1.15rem/1 var(--cond);font-stretch:75%;letter-spacing:.03em;text-transform:uppercase;text-decoration:none;padding:17px 26px 16px;border-radius:3px;border:0;cursor:pointer}
+.btn:hover{background:var(--tape);color:var(--on-tape)}
 
 /* hero */
-.hero{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:56px;align-items:center;padding-block:40px 88px}
-.hero-copy{display:flex;flex-direction:column;gap:24px;min-width:0}
-.hero h1 em{font-style:normal;color:var(--accent)}
-.cta-row{display:flex;flex-wrap:wrap;gap:12px}
-.hero-notes{display:flex;flex-wrap:wrap;gap:8px 22px;list-style:none;padding:0;margin:0;font-size:.92rem;color:var(--muted)}
-.hero-notes li{display:flex;align-items:center;gap:8px}
-.hero-notes li::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent)}
-@media (max-width:940px){.hero{grid-template-columns:minmax(0,1fr);gap:40px;padding-block:24px 64px}}
+.hero{padding-block:34px 96px}
+.hero h1{margin-bottom:44px}
+.hero h1 .it{color:var(--tape);font-size:.92em}
+.hero-grid{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,8fr);gap:56px;align-items:start}
+.pitch{display:flex;flex-direction:column;gap:26px;align-items:flex-start;padding-top:10px}
+.pitch .lead{font-size:1.28rem;line-height:1.4;font-weight:500}
+.pitch small{font:400 .8rem/1.5 var(--mono);color:var(--muted)}
+@media (max-width:920px){.hero-grid{grid-template-columns:minmax(0,1fr);gap:44px}.hero{padding-block:24px 72px}.hero h1{margin-bottom:28px}}
 
 /* la hoja */
-.sheet{min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:0 30px 60px -30px rgba(8,40,46,.45),0 2px 0 rgba(8,40,46,.04);overflow:hidden}
-.sheet-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line);font:500 .78rem/1 var(--mono);color:var(--muted)}
-.tabs{display:flex;gap:4px}
-.tabs span{padding:6px 10px;border-radius:6px}
-.tabs .on{background:var(--deep);color:var(--on-deep)}
-.sample{padding:5px 9px;border-radius:999px;background:var(--accent-soft);color:var(--ink);white-space:nowrap}
-@media (max-width:520px){.tabs span:not(.on){display:none}}
+.taped{position:relative;min-width:0}
+.taped>.tape{position:absolute;z-index:2;height:34px;width:150px;pointer-events:none}
+.taped>.t1{top:-27px;left:-16px;transform:rotate(-7deg)}
+.taped>.t2{bottom:-14px;right:-10px;transform:rotate(-5deg);width:120px}
+.sheet{background:var(--surface);border:1.5px solid var(--ink);border-radius:3px;overflow:hidden;box-shadow:10px 12px 0 -2px var(--line)}
+.tabs{display:flex;border-bottom:1.5px solid var(--ink);background:var(--cell);overflow-x:auto}
+.tabs button{flex:none;appearance:none;border:0;border-right:1px solid var(--line);background:transparent;color:var(--muted);font:500 .8rem/1 var(--mono);padding:13px 15px;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--ink);color:var(--paper)}
+.tabs .ex{margin-left:auto;align-self:center;padding:0 14px;font:500 .7rem/1 var(--mono);color:var(--muted);white-space:nowrap}
 .scroll{overflow-x:auto}
-table{border-collapse:collapse;width:100%;min-width:540px;font:400 .78rem/1.3 var(--mono);font-variant-numeric:tabular-nums}
-th{font-weight:500;text-align:left;color:var(--muted);background:var(--band);padding:9px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
-td{padding:8px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
-td.num,th.num{text-align:right}
-td.c,th.c{text-align:center}
-.state{appearance:none;-webkit-appearance:none;border:0;border-radius:999px;padding:5px 24px 5px 10px;font:500 .74rem/1.2 var(--mono);cursor:pointer;
-  background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);background-position:calc(100% - 14px) 55%,calc(100% - 9px) 55%;background-size:5px 5px;background-repeat:no-repeat}
-.state[data-v="Realizada"]{background-color:var(--ok-bg);color:var(--ok)}
-.state[data-v="Cancelada"]{background-color:var(--off-bg);color:var(--off)}
-.state[data-v="No asistió"]{background-color:var(--bad-bg);color:var(--bad)}
+table{border-collapse:collapse;width:100%;font:400 .78rem/1.3 var(--mono);font-variant-numeric:tabular-nums}
+#p-sesiones table{min-width:560px}
+#p-pacientes table{min-width:520px}
+th{font-weight:500;text-align:left;color:var(--muted);background:var(--cell);padding:9px 9px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:8px 9px;border-bottom:1px solid var(--line);white-space:nowrap}
+.num{text-align:right}
+.c{text-align:center}
+.chip,.state{border-radius:4px;font:500 .74rem/1.2 var(--mono);padding:4px 9px;display:inline-block}
+.state{appearance:none;-webkit-appearance:none;border:0;padding-right:24px;cursor:pointer;background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);background-position:calc(100% - 13px) 55%,calc(100% - 8px) 55%;background-size:5px 5px;background-repeat:no-repeat}
 .state option{background:var(--surface);color:var(--ink)}
-input[type=checkbox]{width:18px;height:18px;accent-color:var(--deep);cursor:pointer;vertical-align:middle}
-:root[data-theme="dark"] input[type=checkbox]{accent-color:var(--accent)}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) input[type=checkbox]{accent-color:var(--accent)}}
-.resumen{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));background:var(--deep);color:var(--on-deep)}
-.resumen div{padding:16px 16px 18px;border-left:1px solid var(--deep-line);min-width:0}
-.resumen div:first-child{border-left:0}
-.resumen dt{font:500 .68rem/1.3 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--on-deep-muted)}
-.resumen dd{margin:6px 0 0;font:600 1.5rem/1.1 var(--display);font-variant-numeric:tabular-nums;white-space:nowrap}
-.resumen .hot dd{color:var(--accent)}
-:root .resumen .hot dd{color:#F0BC52}
-dl{margin:0}
-@media (max-width:560px){.resumen{grid-template-columns:repeat(2,minmax(0,1fr))}.resumen div:nth-child(3){border-left:0}.resumen div:nth-child(n+3){border-top:1px solid var(--deep-line)}}
-.sheet-hint{padding:11px 16px;font-size:.86rem;color:var(--muted);border-top:1px solid var(--line)}
-@keyframes bump{0%{transform:translateY(4px);opacity:.4}100%{transform:none;opacity:1}}
-.bump{animation:bump .28s ease}
-@media (prefers-reduced-motion:reduce){.bump{animation:none}.btn{transition:none}}
+[data-v="Realizada"],[data-v="Activo"],[data-v="Sí"]{background-color:var(--ok-bg);color:var(--ok)}
+[data-v="Cancelada"],[data-v="Alta"]{background-color:var(--off-bg);color:var(--off)}
+[data-v="No asistió"],[data-v="No"]{background-color:var(--bad-bg);color:var(--bad)}
+[data-v="Pendiente"],[data-v="Pausado"]{background-color:var(--warn-bg);color:var(--warn)}
+input[type=checkbox]{width:18px;height:18px;accent-color:var(--tape);cursor:pointer;vertical-align:middle}
+.strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin:0;border-top:1.5px solid var(--ink)}
+.strip div{padding:14px 14px 15px;border-left:1px solid var(--line);min-width:0}
+.strip div:first-child{border-left:0}
+.strip dt{font:500 .66rem/1.3 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.strip dd{margin:5px 0 0;font:800 2rem/1 var(--cond);font-stretch:68%;font-variant-numeric:tabular-nums;white-space:nowrap}
+.strip .owe{background:var(--tape);color:var(--on-tape)}
+.strip .owe dt{color:var(--on-tape-soft)}
+@media (max-width:560px){.strip{grid-template-columns:repeat(2,minmax(0,1fr))}.strip div:nth-child(3){border-left:0}.strip div:nth-child(n+3){border-top:1px solid var(--line)}}
+.pasos{margin:0;padding:22px 24px;list-style:none;display:flex;flex-direction:column;gap:14px;font:400 .86rem/1.5 var(--mono)}
+.pasos b{font-weight:700}
+.res td:last-child{text-align:right;font-weight:700;font-size:.9rem}
+.res tr.owe td{background:var(--tape);color:var(--on-tape)}
+@keyframes bump{from{transform:translateY(5px);opacity:.3}to{transform:none;opacity:1}}
+.bump{animation:bump .25s ease}
+@media (prefers-reduced-motion:reduce){.bump{animation:none}}
 
-/* secciones */
-section{padding-block:88px}
-.band{background:var(--band)}
-.head{display:flex;flex-direction:column;gap:16px;margin-bottom:48px;max-width:46em}
-.steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;list-style:none;margin:0;padding:0;border-top:1px solid var(--ink)}
-.steps li{padding:26px 26px 6px 0;display:flex;flex-direction:column;gap:12px;min-width:0}
-.steps li+li{padding-left:26px;border-left:1px solid var(--line)}
-.steps .n{font:500 .8rem/1 var(--mono);letter-spacing:.14em;color:var(--accent)}
-.steps p{color:var(--muted);font-size:.98rem}
-.steps code{font:500 .86em var(--mono);background:var(--surface);border:1px solid var(--line);border-radius:5px;padding:1px 6px;color:var(--ink)}
-@media (max-width:900px){.steps{grid-template-columns:repeat(2,minmax(0,1fr))}.steps li:nth-child(3){padding-left:0;border-left:0}.steps li:nth-child(n+3){border-top:1px solid var(--line)}}
-@media (max-width:540px){.steps{grid-template-columns:minmax(0,1fr)}.steps li,.steps li+li{padding:22px 0 6px;border-left:0}.steps li+li{border-top:1px solid var(--line)}}
+/* tres frases */
+section{padding-block:96px}
+.heard{border-top:1.5px solid var(--ink)}
+.heard h2{margin:26px 0 56px;max-width:11em}
+.quotes{list-style:none;margin:0;padding:0}
+.quotes li{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:20px 56px;align-items:end;padding-block:34px;border-top:1px solid var(--line)}
+.quotes li:nth-child(2) q{padding-left:8%}
+.quotes q{font:400 clamp(2rem,5.2vw,4rem)/1.02 var(--serif);font-style:italic;letter-spacing:-.025em;quotes:"«" "»";text-wrap:balance}
+.quotes p{max-width:30em}
+.quotes b{font-weight:700}
+@media (max-width:820px){.quotes li{grid-template-columns:minmax(0,1fr)}.quotes li:nth-child(2) q{padding-left:0}section{padding-block:72px}}
 
-.split{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:64px;align-items:start}
-@media (max-width:900px){.split{grid-template-columns:minmax(0,1fr);gap:36px}}
-.split .head{margin-bottom:0}
-.kpis{list-style:none;margin:0;padding:0;border-top:1px solid var(--ink)}
-.kpis li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 20px;padding:16px 0;border-bottom:1px solid var(--line);align-items:baseline}
-.kpis b{font:600 1.05rem/1.3 var(--display)}
-.kpis span{grid-column:1;color:var(--muted);font-size:.93rem}
-.kpis i{grid-row:1;grid-column:2;font:500 .78rem/1 var(--mono);font-style:normal;color:var(--muted)}
+/* camillas */
+.beds{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border-top:1.5px solid var(--ink);border-bottom:1.5px solid var(--ink)}
+.beds article{padding:44px 44px 48px 0;min-width:0;display:flex;flex-direction:column;gap:18px}
+.beds article+article{padding:44px 0 48px 44px;border-left:1.5px solid var(--ink)}
+.beds .n{font:800 clamp(5rem,15vw,11rem)/.8 var(--cond);font-stretch:62%;letter-spacing:-.03em}
+.beds .n span{font-size:.24em;letter-spacing:.02em;margin-left:.3em;font-stretch:75%;text-transform:uppercase}
+.beds h3{margin:0;font:400 1.7rem/1.1 var(--serif);font-style:italic;letter-spacing:-.02em}
+.beds ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:9px;max-width:30em}
+.beds li{padding-left:26px;position:relative}
+.beds li::before{content:"";position:absolute;left:0;top:.62em;width:14px;height:5px;border-radius:2px;background:var(--tape)}
+@media (max-width:760px){.beds{grid-template-columns:minmax(0,1fr)}.beds article,.beds article+article{padding:34px 0 38px}.beds article+article{border-left:0;border-top:1.5px solid var(--ink)}}
 
-.who{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;align-items:stretch}
-@media (max-width:760px){.who{grid-template-columns:minmax(0,1fr)}}
-.who article{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:34px 34px 38px;display:flex;flex-direction:column;gap:16px;min-width:0}
-.who article.dark{background:var(--deep);border-color:var(--deep);color:var(--on-deep)}
-.who .eyebrow{color:var(--accent)}
-.who article.dark .eyebrow{color:#F0BC52}
-.who ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px;font-size:.98rem}
-.who li{padding-left:22px;position:relative;color:var(--muted)}
-.who article.dark li{color:var(--on-deep-muted)}
-.who li::before{content:"";position:absolute;left:0;top:.62em;width:10px;height:2px;background:currentColor}
+/* no es historia clínica */
+.not{background:var(--block);color:var(--on-block);padding-block:96px}
+.not h2{margin:28px 0 52px}
+.not h2 .it{color:var(--beige)}
+.not .cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:40px;border-top:1px solid var(--block-line);padding-top:30px}
+.not .cols div{display:flex;flex-direction:column;gap:10px;min-width:0}
+.not h3{margin:0;font:800 1.25rem/1.1 var(--cond);font-stretch:75%;text-transform:uppercase;letter-spacing:.02em}
+.not p{color:var(--on-block-soft);font-size:.98rem}
+@media (max-width:820px){.not .cols{grid-template-columns:minmax(0,1fr);gap:26px}.not{padding-block:72px}}
 
-.limits{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:36px}
-@media (max-width:820px){.limits{grid-template-columns:minmax(0,1fr);gap:28px}}
-.limits div{display:flex;flex-direction:column;gap:10px;min-width:0}
-.limits p{color:var(--muted);font-size:.98rem}
+/* compra */
+.buy{background-color:var(--tape);background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.06) 0 1px,transparent 1px 5px),repeating-linear-gradient(0deg,rgba(0,0,0,.05) 0 1px,transparent 1px 5px);color:var(--on-tape);padding-block:88px}
+.buy .grid{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:56px;align-items:end}
+.buy h2{margin-bottom:24px}
+.buy .lead{font-size:1.15rem;max-width:30em;color:var(--on-tape-soft)}
+.offer{display:flex;flex-direction:column;gap:16px;min-width:0}
+.price{font:800 clamp(4rem,9vw,7rem)/.85 var(--cond);font-stretch:62%;letter-spacing:-.02em}
+.todo{display:inline-block;font:500 .8rem/1.4 var(--mono);letter-spacing:.02em;border:1.5px dashed var(--on-tape);border-radius:4px;padding:8px 12px;text-transform:none}
+.mail{display:flex;gap:0;border:1.5px solid var(--on-tape);border-radius:3px}
+.mail output{flex:1;min-width:0;padding:13px 14px;font:500 .9rem/1.3 var(--mono);overflow-wrap:anywhere;user-select:all}
+.mail button{flex:none;border:0;border-left:1.5px solid var(--on-tape);background:var(--on-tape);color:var(--tape);font:800 1rem/1 var(--cond);font-stretch:75%;text-transform:uppercase;letter-spacing:.03em;padding:0 18px;cursor:pointer}
+.offer small{font:400 .8rem/1.5 var(--mono);color:var(--on-tape-soft)}
+@media (max-width:820px){.buy .grid{grid-template-columns:minmax(0,1fr);gap:36px}.buy{padding-block:64px}}
 
-.buy{background:var(--deep);color:var(--on-deep);border-radius:22px;padding:56px;display:grid;grid-template-columns:minmax(0,6fr) minmax(0,5fr);gap:48px;align-items:center}
-@media (max-width:860px){.buy{grid-template-columns:minmax(0,1fr);padding:34px 24px;gap:32px}}
-.buy .lead{color:var(--on-deep-muted)}
-.buy .eyebrow{color:#F0BC52}
-.buy-copy{display:flex;flex-direction:column;gap:18px;min-width:0}
-.buy ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 20px;font-size:.95rem;color:var(--on-deep-muted)}
-@media (max-width:480px){.buy ul{grid-template-columns:minmax(0,1fr)}}
-.buy li::before{content:"✓";margin-right:8px;color:#F0BC52}
-.offer{background:rgba(255,255,255,.06);border:1px solid var(--deep-line);border-radius:var(--r);padding:28px;display:flex;flex-direction:column;gap:16px;min-width:0}
-.price{font:700 2.6rem/1 var(--display);letter-spacing:-.02em}
-.todo{border:1px dashed #F0BC52;border-radius:8px;padding:2px 8px;color:#F0BC52}
-.mail{display:flex;gap:8px;align-items:stretch}
-.mail output{flex:1;min-width:0;display:flex;align-items:center;padding:10px 14px;border-radius:10px;border:1px solid var(--deep-line);font:500 .9rem/1.2 var(--mono);overflow-wrap:anywhere;user-select:all}
-.mail button{flex:none;border-radius:10px;border:1px solid var(--deep-line);background:transparent;color:var(--on-deep);font:600 .9rem/1 var(--body);padding:0 16px;cursor:pointer}
-.mail button:hover{background:rgba(255,255,255,.08)}
-.offer small{color:var(--on-deep-muted);font-size:.86rem;line-height:1.5}
-.offer .btn{width:100%}
+/* dudas */
+.qa{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 56px;margin:40px 0 0;border-top:1.5px solid var(--ink)}
+.qa div{padding:26px 0 28px;border-bottom:1px solid var(--line);min-width:0}
+.qa dt{font:400 1.45rem/1.15 var(--serif);font-style:italic;letter-spacing:-.015em;margin-bottom:10px}
+.qa dd{margin:0;color:var(--muted);max-width:34em}
+@media (max-width:760px){.qa{grid-template-columns:minmax(0,1fr)}}
 
-.faq{max-width:780px}
-details{border-bottom:1px solid var(--line)}
-details:first-of-type{border-top:1px solid var(--ink)}
-summary{cursor:pointer;list-style:none;padding:20px 36px 20px 0;font:600 1.1rem/1.3 var(--display);position:relative}
-summary::-webkit-details-marker{display:none}
-summary::after{content:"+";position:absolute;right:4px;top:50%;transform:translateY(-50%);font:400 1.5rem/1 var(--mono);color:var(--accent)}
-details[open] summary::after{content:"–"}
-details p{padding:0 0 22px;color:var(--muted);max-width:60ch}
-
-footer{padding-block:36px 48px;border-top:1px solid var(--line);font-size:.88rem;color:var(--muted)}
-footer .wrap{display:flex;flex-wrap:wrap;gap:10px 28px;justify-content:space-between}
+footer{padding-block:28px 40px;border-top:1.5px solid var(--ink);font:400 .76rem/1.5 var(--mono);text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+footer .wrap{display:flex;flex-wrap:wrap;gap:8px 28px;justify-content:space-between}
 </style>
 
 <header class="wrap top">
-  <a class="brand" href="#inicio" aria-label="Gestión de consulta, inicio">
-    <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><rect x="1" y="1" width="24" height="24" rx="6" fill="var(--deep)"/><path d="M7 9h12M7 13h12M7 17h7" stroke="var(--on-deep)" stroke-width="1.8" stroke-linecap="round" fill="none"/><circle cx="18.5" cy="17" r="2" fill="var(--accent)"/></svg>
-    Gestión de consulta
-  </a>
-  <nav>
-    <a class="link" href="#como">Cómo funciona</a>
-    <a class="link" href="#resumen">Indicadores</a>
-    <a class="link" href="#dudas">Dudas</a>
-    <a class="btn btn-primary btn-sm" href="#comprar">Conseguir la hoja</a>
-  </nav>
+  <span>Gestión de consulta <span class="muted">/ para fisioterapeutas</span></span>
+  <a href="#comprar">Quiero la hoja</a>
 </header>
 
-<main id="inicio">
+<main>
 <div class="wrap hero">
-  <div class="hero-copy">
-    <p class="eyebrow">Para fisioterapeutas y clínicas</p>
-    <h1>Tu consulta, al día en <em>una sola hoja</em>.</h1>
-    <p class="lead">Pacientes, sesiones y cobros en un único sitio. Anotas la cita, marcas si está cobrada y la hoja calcula sola tus ingresos, lo pendiente y las no asistencias.</p>
-    <div class="cta-row">
-      <a class="btn btn-primary" href="#comprar">Conseguir la hoja</a>
-      <a class="btn btn-ghost" href="#como">Ver cómo funciona</a>
+  <h1 class="big">¿Quién te debe <span class="it">una sesión?</span></h1>
+  <div class="hero-grid">
+    <div class="pitch">
+      <p class="lead">Si para contestar tienes que repasar la agenda, los Bizum y la memoria, te falta esta hoja.</p>
+      <p class="muted">Anotas la cita y marcas si está cobrada. Ella lleva la cuenta de lo que has ingresado, lo que te deben y quién no se presentó.</p>
+      <a class="btn" href="#comprar">Quiero la hoja</a>
+      <small>La de al lado es la hoja de verdad, con datos de ejemplo. Marca una casilla de Cobrado y mira el número azul.</small>
     </div>
-    <ul class="hero-notes">
-      <li>Sin instalar nada</li>
-      <li>Fórmulas ya hechas</li>
-      <li>Lista en 10 minutos</li>
-    </ul>
-  </div>
 
-  <div class="sheet" aria-label="Demostración interactiva de la hoja">
-    <div class="sheet-bar">
-      <div class="tabs"><span>Inicio</span><span>Pacientes</span><span class="on">Sesiones</span><span>Resumen</span></div>
-      <span class="sample">Datos de ejemplo</span>
+    <div class="taped">
+      <i class="tape t1" aria-hidden="true"></i>
+      <i class="tape beige t2" aria-hidden="true"></i>
+      <div class="sheet">
+        <div class="tabs" role="tablist" aria-label="Pestañas de la hoja">
+          <button type="button" role="tab" id="t-inicio" aria-controls="p-inicio" aria-selected="false">Inicio</button>
+          <button type="button" role="tab" id="t-pacientes" aria-controls="p-pacientes" aria-selected="false">Pacientes</button>
+          <button type="button" role="tab" id="t-sesiones" aria-controls="p-sesiones" aria-selected="true">Sesiones</button>
+          <button type="button" role="tab" id="t-resumen" aria-controls="p-resumen" aria-selected="false">Resumen</button>
+          <span class="ex">datos de ejemplo</span>
+        </div>
+
+        <div id="p-inicio" role="tabpanel" aria-labelledby="t-inicio" hidden>
+          <ol class="pasos">
+            <li><b>PASO 1. Pacientes:</b> anota cada paciente nuevo con un código (P-003, P-004...) y sus iniciales.</li>
+            <li><b>PASO 2. Sesiones:</b> cada cita va en una fila. Escribe el código del paciente y el nombre aparece solo.</li>
+            <li><b>PASO 3. Cobro:</b> marca la casilla Cobrado cuando te paguen. Lo que quede sin marcar aparece en Pendiente de cobro.</li>
+            <li><b>PASO 4. Resumen:</b> revisa aquí tus cifras. No escribas en esta pestaña, se calcula sola.</li>
+          </ol>
+        </div>
+
+        <div id="p-pacientes" role="tabpanel" aria-labelledby="t-pacientes" hidden>
+          <div class="scroll"><table>
+            <thead><tr><th>ID</th><th>Iniciales</th><th>Alta</th><th>Mutua</th><th>Estado</th><th class="num">Nº sesiones</th><th>RGPD</th></tr></thead>
+            <tbody id="pac"></tbody>
+          </table></div>
+        </div>
+
+        <div id="p-sesiones" role="tabpanel" aria-labelledby="t-sesiones">
+          <div class="scroll"><table>
+            <thead><tr><th>Fecha</th><th>ID</th><th>Paciente</th><th>Tipo</th><th>Estado</th><th class="num">Tarifa €</th><th class="c">Cobrado</th></tr></thead>
+            <tbody id="rows"></tbody>
+          </table></div>
+          <dl class="strip" aria-live="polite">
+            <div><dt>Sesiones realizadas</dt><dd id="k-real">0</dd></div>
+            <div><dt>Ingresos cobrados</dt><dd id="k-cob">0 €</dd></div>
+            <div class="owe"><dt>Pendiente de cobro</dt><dd id="k-pen">0 €</dd></div>
+            <div><dt>No asistencia</dt><dd id="k-tasa">0 %</dd></div>
+          </dl>
+        </div>
+
+        <div id="p-resumen" role="tabpanel" aria-labelledby="t-resumen" hidden>
+          <table class="res">
+            <thead><tr><th>Indicador</th><th class="num">Valor</th></tr></thead>
+            <tbody id="res"></tbody>
+          </table>
+        </div>
+      </div>
     </div>
-    <div class="scroll">
-      <table>
-        <thead><tr><th>Fecha</th><th>ID</th><th>Paciente</th><th>Tipo</th><th>Estado</th><th class="num">Tarifa €</th><th class="c">Cobrado</th></tr></thead>
-        <tbody id="rows"></tbody>
-      </table>
-    </div>
-    <dl class="resumen" aria-live="polite">
-      <div><dt>Sesiones realizadas</dt><dd id="k-real">0</dd></div>
-      <div><dt>Ingresos cobrados</dt><dd id="k-cob">0 €</dd></div>
-      <div class="hot"><dt>Pendiente de cobro</dt><dd id="k-pen">0 €</dd></div>
-      <div><dt>Tasa de no asistencia</dt><dd id="k-tasa">0 %</dd></div>
-    </dl>
-    <p class="sheet-hint">Pruébala: marca una casilla de Cobrado o cambia un Estado y mira cómo se recalcula el resumen.</p>
   </div>
 </div>
 
-<section class="band" id="como">
-  <div class="wrap">
-    <div class="head">
-      <p class="eyebrow">Cómo funciona</p>
-      <h2>Cuatro pasos. El cuarto lo hace la hoja.</h2>
-      <p class="lead">Una pestaña por tarea y una guía de inicio dentro del propio archivo. Si sabes rellenar una tabla, sabes usarla.</p>
-    </div>
-    <ol class="steps">
-      <li><span class="n">PASO 1</span><h3>Da de alta al paciente</h3><p>Una fila por paciente, con un código (<code>P-003</code>, <code>P-004</code>…), sus iniciales, contacto, mutua y estado: activo, pausado o alta.</p></li>
-      <li><span class="n">PASO 2</span><h3>Anota cada sesión</h3><p>Cada cita va en una fila. Escribes el código y el nombre aparece solo. Eliges el tipo: individual, domiciliaria, telemedicina o grupal.</p></li>
-      <li><span class="n">PASO 3</span><h3>Marca el cobro</h3><p>Una casilla por sesión. Lo que queda sin marcar pasa automáticamente a pendiente de cobro. Las canceladas y las no asistencias no suman.</p></li>
-      <li><span class="n">PASO 4</span><h3>Lee tu resumen</h3><p>Ingresos, pendientes, pacientes activos y tasa de no asistencia, siempre actualizados. No se escribe nada en esa pestaña.</p></li>
-    </ol>
+<section class="wrap heard">
+  <span class="tape beige tag">Te suena</span>
+  <h2 class="big">Tres frases que dejas de oír</h2>
+  <ul class="quotes">
+    <li><q>Luego te hago un Bizum.</q><p>Cada sesión tiene su casilla de <b>Cobrado</b>. Lo que queda sin marcar se suma solo en <b>Pendiente de cobro</b>, y en la pestaña Sesiones ves de quién es cada una.</p></li>
+    <li><q>Creo que es la tercera vez que no viene.</q><p>Cada cita queda como Realizada, Cancelada o No asistió. La hoja cuenta las ausencias y calcula tu <b>tasa de no asistencia</b>. Deja de ser una sensación.</p></li>
+    <li><q>El consentimiento lo firmó, ¿no?</q><p>Una columna por paciente: Sí, No o Pendiente. El resumen te dice <b>cuántos faltan por firmar</b> el consentimiento RGPD.</p></li>
+  </ul>
+</section>
+
+<section class="wrap" style="padding-top:0">
+  <div class="beds">
+    <article>
+      <p class="n">1<span>camilla</span></p>
+      <h3>Trabajas por tu cuenta</h3>
+      <ul>
+        <li>Consulta, domicilios y telemedicina en el mismo sitio, cada uno con su tarifa.</li>
+        <li>Cuántas sesiones lleva cada paciente, sin contarlas a mano.</li>
+        <li>El mes cerrado en un vistazo, no en una tarde de domingo.</li>
+      </ul>
+    </article>
+    <article>
+      <p class="n">5<span>camillas</span></p>
+      <h3>Llevas una clínica</h3>
+      <ul>
+        <li>Un solo archivo compartido: recepción anota, dirección consulta.</li>
+        <li>Listas desplegables para tipo y estado. Nadie escribe lo mismo de dos formas.</li>
+        <li>Pacientes activos, en pausa y de alta, siempre al día.</li>
+      </ul>
+    </article>
   </div>
 </section>
 
-<section id="resumen">
-  <div class="wrap split">
-    <div class="head">
-      <p class="eyebrow">Pestaña Resumen</p>
-      <h2>Las ocho cifras que explican tu mes.</h2>
-      <p class="lead">Saber cuánto has cobrado, cuánto te deben y cuántas citas se pierden no debería llevarte una tarde de domingo. Aquí está siempre a la vista.</p>
-    </div>
-    <ul class="kpis">
-      <li><b>Sesiones realizadas</b><i>recuento</i><span>Las citas que de verdad se han hecho.</span></li>
-      <li><b>Cancelaciones</b><i>recuento</i><span>Citas anuladas con aviso.</span></li>
-      <li><b>No asistencias</b><i>recuento</i><span>Pacientes que no se presentaron.</span></li>
-      <li><b>Tasa de no asistencia</b><i>%</i><span>No asistencias sobre el total de citas que debían hacerse.</span></li>
-      <li><b>Ingresos cobrados</b><i>€</i><span>Suma de las sesiones realizadas y marcadas como cobradas.</span></li>
-      <li><b>Pendiente de cobro</b><i>€</i><span>Sesiones realizadas que todavía no has cobrado.</span></li>
-      <li><b>Pacientes activos</b><i>recuento</i><span>Quién está en tratamiento ahora mismo.</span></li>
-      <li><b>Sin consentimiento RGPD</b><i>recuento</i><span>Pacientes a los que aún falta firmar el consentimiento.</span></li>
-    </ul>
-  </div>
-</section>
-
-<section class="band" id="para-quien">
+<section class="not">
   <div class="wrap">
-    <div class="head">
-      <p class="eyebrow">Para quién es</p>
-      <h2>Igual de útil con una camilla que con cinco.</h2>
-    </div>
-    <div class="who">
-      <article>
-        <p class="eyebrow">Fisioterapeuta autónomo</p>
-        <h3>Deja de cuadrar cuentas entre la agenda, el móvil y la memoria.</h3>
-        <ul>
-          <li>Sabes al momento qué sesiones tienes sin cobrar.</li>
-          <li>Registras consulta, domicilios y telemedicina en el mismo sitio.</li>
-          <li>Ves cuántas sesiones lleva cada paciente sin contarlas a mano.</li>
-        </ul>
-      </article>
-      <article class="dark">
-        <p class="eyebrow">Clínica o centro</p>
-        <h3>Una hoja compartida que recepción rellena y dirección consulta.</h3>
-        <ul>
-          <li>Todo el equipo anota en el mismo archivo, con el mismo criterio.</li>
-          <li>Listas desplegables para tipo y estado: no hay dos formas de escribir lo mismo.</li>
-          <li>La tasa de no asistencia deja de ser una impresión y pasa a ser un dato.</li>
-        </ul>
-      </article>
+    <span class="tape tag blue">Para que quede claro</span>
+    <h2 class="big">Esto no es una <span class="it">historia clínica.</span></h2>
+    <div class="cols">
+      <div><h3>Citas y cobros, nada más</h3><p>Es una herramienta administrativa. La información de salud va en tu registro clínico oficial. Por eso cada paciente figura con un código y sus iniciales.</p></div>
+      <div><h3>El consentimiento, vigilado</h3><p>La hoja te recuerda a quién le falta firmar. Recogerlo y custodiarlo sigue siendo cosa tuya.</p></div>
+      <div><h3>El archivo es tuyo</h3><p>Decides con quién lo compartes. Hazlo solo con quien deba verlo: contiene datos de tus pacientes.</p></div>
     </div>
   </div>
 </section>
 
-<section id="limites">
-  <div class="wrap">
-    <div class="head">
-      <p class="eyebrow">Con las cosas claras</p>
-      <h2>Gestión administrativa. No historia clínica.</h2>
-      <p class="lead">Trabajas con datos de pacientes, así que preferimos decir exactamente qué hace la hoja y qué no.</p>
+<section class="buy" id="comprar">
+  <div class="wrap grid">
+    <div>
+      <h2 class="big">El lunes ya la <span class="it">estás usando.</span></h2>
+      <p class="lead">Borras las dos filas de ejemplo, das de alta a tus pacientes y empiezas a anotar. Las cuatro pestañas llegan conectadas y con las fórmulas puestas, preparadas para 499 sesiones y ampliables.</p>
     </div>
-    <div class="limits">
-      <div><h3>Sin datos de salud</h3><p>Está pensada para citas y cobros. La información clínica va en tu registro clínico oficial, no aquí. Por eso identifica a cada paciente con un código y sus iniciales.</p></div>
-      <div><h3>Consentimiento a la vista</h3><p>Una columna recoge si cada paciente ha firmado el consentimiento RGPD, y el resumen te avisa de cuántos faltan. La hoja lo controla; firmarlo sigue siendo cosa tuya.</p></div>
-      <div><h3>Tú decides quién la ve</h3><p>El archivo es tuyo. Compártelo solo con quien deba verlo, porque contiene datos de tus pacientes.</p></div>
-    </div>
-  </div>
-</section>
-
-<section id="comprar" style="padding-top:0">
-  <div class="wrap">
-    <div class="buy">
-      <div class="buy-copy">
-        <p class="eyebrow">Consíguela</p>
-        <h2>Empieza esta semana con la consulta ordenada.</h2>
-        <p class="lead">Recibes la hoja completa, lista para usar: borras las dos filas de ejemplo y empiezas a anotar.</p>
-        <ul>
-          <li>4 pestañas conectadas</li>
-          <li>Fórmulas ya configuradas</li>
-          <li>Guía de inicio incluida</li>
-          <li>Desplegables y casillas</li>
-          <li>Hasta 499 sesiones de serie</li>
-          <li>Ampliable sin límite</li>
-        </ul>
+    <div class="offer">
+      <p class="price" id="price"><span class="todo">Falta tu precio</span></p>
+      <div class="mail">
+        <output id="email">tu-correo@tudominio.es</output>
+        <button type="button" id="copy">Copiar</button>
       </div>
-      <div class="offer">
-        <p class="eyebrow">Precio</p>
-        <p class="price"><span class="todo" id="price">— €</span></p>
-        <small>Escríbenos y te enviamos la hoja con las instrucciones de acceso.</small>
-        <div class="mail">
-          <output id="email">tu-correo@tudominio.es</output>
-          <button type="button" id="copy">Copiar</button>
-        </div>
-        <small id="copied" hidden>Dirección copiada.</small>
-      </div>
+      <small id="mailnote">Escribe a esta dirección y te enviamos la hoja con las instrucciones de acceso.</small>
     </div>
   </div>
 </section>
 
-<section id="dudas" style="padding-top:0">
-  <div class="wrap faq">
-    <div class="head">
-      <p class="eyebrow">Dudas frecuentes</p>
-      <h2>Antes de decidirte</h2>
-    </div>
-    <details><summary>¿Necesito saber de hojas de cálculo?</summary><p>No. Las fórmulas ya están puestas. Tú solo escribes en las pestañas Pacientes y Sesiones; el resto se calcula solo.</p></details>
-    <details><summary>¿Puedo guardar aquí la historia clínica?</summary><p>No, y la propia hoja te lo avisa. Es una herramienta administrativa: citas, cobros y control del consentimiento. La información de salud debe ir en tu registro clínico oficial.</p></details>
-    <details><summary>Yo cobro las no asistencias. ¿Me sirve?</summary><p>Sí. De serie, las sesiones canceladas o no asistidas no suman en pendiente de cobro, pero se cambia modificando una sola fórmula de la pestaña Sesiones. La guía de inicio indica cuál.</p></details>
-    <details><summary>¿Cuántos pacientes y sesiones admite?</summary><p>Viene preparada para 499 sesiones y otros tantos pacientes. Si necesitas más, basta con extender las fórmulas hacia abajo.</p></details>
-    <details><summary>¿Qué tengo que hacer el primer día?</summary><p>Borrar las dos filas de ejemplo, dar de alta a tus pacientes con su código y empezar a anotar sesiones. Unos diez minutos.</p></details>
-  </div>
+<section class="wrap">
+  <span class="tape beige tag">Dudas</span>
+  <dl class="qa">
+    <div><dt>¿Tengo que saber de hojas de cálculo?</dt><dd>No. Solo escribes en Pacientes y en Sesiones. Las fórmulas ya están puestas y el resumen se calcula solo.</dd></div>
+    <div><dt>Yo cobro las ausencias. ¿Me sirve?</dt><dd>Sí. De serie, las canceladas y las no asistidas no suman en pendiente de cobro. Se cambia tocando una sola fórmula, y la guía de inicio te dice cuál.</dd></div>
+    <div><dt>¿Cuánto cabe?</dt><dd>Viene preparada para 499 sesiones. Si necesitas más, extiendes las fórmulas hacia abajo.</dd></div>
+    <div><dt>¿Qué hago el primer día?</dt><dd>Borrar los ejemplos, dar de alta a tus pacientes con su código y anotar la primera cita.</dd></div>
+  </dl>
 </section>
 </main>
 
@@ -374,50 +325,70 @@ var PRECIO = "";            // p. ej. "29 €"
 var EMAIL  = "";            // p. ej. "hola@tudominio.es"
 
 (function(){
-  if(PRECIO){var p=document.getElementById('price');p.textContent=PRECIO;p.classList.remove('todo');}
-  if(EMAIL){document.getElementById('email').textContent=EMAIL;}
+  var $=function(id){return document.getElementById(id)};
+  if(PRECIO){$('price').textContent=PRECIO;}
+  if(EMAIL){$('email').textContent=EMAIL;}
 
-  var data=[
-    ["10/11","P-001","Ejemplo A","Individual","Realizada",45,true],
-    ["10/11","P-002","Ejemplo B","Domiciliaria","Realizada",60,false],
-    ["11/11","P-003","Ejemplo C","Individual","No asistió",45,false],
-    ["12/11","P-001","Ejemplo A","Individual","Realizada",45,false],
-    ["12/11","P-004","Ejemplo D","Telemedicina","Cancelada",35,false],
-    ["13/11","P-002","Ejemplo B","Grupal","Realizada",20,true]
+  var pacientes=[
+    ["P-001","Ejemplo A","02/11","Mutua ejemplo","Activo","Sí"],
+    ["P-002","Ejemplo B","09/11","","Activo","Pendiente"],
+    ["P-003","Ejemplo C","09/11","","Pausado","Sí"],
+    ["P-004","Ejemplo D","10/11","Mutua ejemplo","Activo","No"]
+  ];
+  var nombre={};pacientes.forEach(function(p){nombre[p[0]]=p[1]});
+  var ses=[
+    ["10/11","P-001","Individual","Realizada",45,true],
+    ["10/11","P-002","Domiciliaria","Realizada",60,false],
+    ["11/11","P-003","Individual","No asistió",45,false],
+    ["12/11","P-001","Individual","Realizada",45,false],
+    ["12/11","P-004","Telemedicina","Cancelada",35,false],
+    ["13/11","P-002","Grupal","Realizada",20,true]
   ];
   var estados=["Realizada","Cancelada","No asistió"];
-  var tb=document.getElementById('rows');
-  data.forEach(function(r,i){
+  var eur=function(n){return n.toFixed(2).replace('.',',')};
+
+  ses.forEach(function(r,i){
     var tr=document.createElement('tr');
-    tr.innerHTML='<td>'+r[0]+'</td><td>'+r[1]+'</td><td>'+r[2]+'</td><td>'+r[3]+'</td>'+
-      '<td><select class="state" id="estado-'+i+'" aria-label="Estado de la sesión '+(i+1)+'" data-v="'+r[4]+'">'+
-      estados.map(function(e){return '<option'+(e===r[4]?' selected':'')+'>'+e+'</option>'}).join('')+'</select></td>'+
-      '<td class="num">'+r[5].toFixed(2).replace('.',',')+'</td>'+
-      '<td class="c"><input type="checkbox" id="cobrado-'+i+'" aria-label="Cobrada la sesión '+(i+1)+'"'+(r[6]?' checked':'')+'></td>';
-    tb.appendChild(tr);
-    tr.querySelector('select').addEventListener('change',function(){r[4]=this.value;this.dataset.v=this.value;calc(true)});
-    tr.querySelector('input').addEventListener('change',function(){r[6]=this.checked;calc(true)});
+    tr.innerHTML='<td>'+r[0]+'</td><td>'+r[1]+'</td><td>'+nombre[r[1]]+'</td><td>'+r[2]+'</td>'+
+      '<td><select class="state" id="estado-'+i+'" aria-label="Estado de la sesión '+(i+1)+'" data-v="'+r[3]+'">'+
+      estados.map(function(e){return '<option'+(e===r[3]?' selected':'')+'>'+e+'</option>'}).join('')+'</select></td>'+
+      '<td class="num">'+eur(r[4])+'</td>'+
+      '<td class="c"><input type="checkbox" id="cobrado-'+i+'" aria-label="Cobrada la sesión '+(i+1)+'"'+(r[5]?' checked':'')+'></td>';
+    $('rows').appendChild(tr);
+    tr.querySelector('select').addEventListener('change',function(){r[3]=this.value;this.dataset.v=this.value;calc(true)});
+    tr.querySelector('input').addEventListener('change',function(){r[5]=this.checked;calc(true)});
   });
-  function set(id,v,anim){var el=document.getElementById(id);if(el.textContent===v)return;el.textContent=v;
+
+  function set(id,v,anim){var el=$(id);if(el.textContent===v)return;el.textContent=v;
     if(anim){el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump');}}
   function calc(anim){
-    var real=0,na=0,cob=0,pen=0;
-    data.forEach(function(r){
-      if(r[4]==="Realizada"){real++; if(r[6])cob+=r[5]; else pen+=r[5];}
-      else if(r[4]==="No asistió")na++;
+    var real=0,na=0,can=0,cob=0,pen=0,por={};
+    ses.forEach(function(r){
+      if(r[3]==="Realizada"){real++;por[r[1]]=(por[r[1]]||0)+1; if(r[5])cob+=r[4]; else pen+=r[4];}
+      else if(r[3]==="No asistió")na++; else can++;
     });
-    var tasa=real+na===0?0:na/(real+na)*100;
-    set('k-real',String(real),anim);
-    set('k-cob',cob+' €',anim);
-    set('k-pen',pen+' €',anim);
-    set('k-tasa',tasa.toFixed(1).replace('.',',')+' %',anim);
+    var tasa=(real+na===0?0:na/(real+na)*100).toFixed(1).replace('.',',')+' %';
+    set('k-real',String(real),anim); set('k-cob',cob+' €',anim); set('k-pen',pen+' €',anim); set('k-tasa',tasa,anim);
+    $('pac').innerHTML=pacientes.map(function(p){
+      return '<tr><td>'+p[0]+'</td><td>'+p[1]+'</td><td>'+p[2]+'</td><td>'+(p[3]||'')+'</td><td><span class="chip" data-v="'+p[4]+'">'+p[4]+
+        '</span></td><td class="num">'+(por[p[0]]||0)+'</td><td><span class="chip" data-v="'+p[5]+'">'+p[5]+'</span></td></tr>'}).join('');
+    var act=pacientes.filter(function(p){return p[4]==="Activo"}).length;
+    var sin=pacientes.filter(function(p){return p[5]!=="Sí"}).length;
+    $('res').innerHTML=[["Sesiones realizadas",real],["Cancelaciones",can],["No asistencias",na],["Tasa de no asistencia",tasa],
+      ["Ingresos cobrados (€)",eur(cob)+' €'],["Pendiente de cobro (€)",eur(pen)+' €',1],["Pacientes activos",act],["Pacientes sin consentimiento RGPD",sin]]
+      .map(function(k){return '<tr'+(k[2]?' class="owe"':'')+'><td>'+k[0]+'</td><td>'+k[1]+'</td></tr>'}).join('');
   }
   calc(false);
 
-  document.getElementById('copy').addEventListener('click',function(){
-    var out=document.getElementById('email'),ok=document.getElementById('copied');
+  var tabs=[].slice.call(document.querySelectorAll('[role=tab]'));
+  tabs.forEach(function(t){t.addEventListener('click',function(){
+    tabs.forEach(function(o){var on=o===t;o.setAttribute('aria-selected',on);$(o.getAttribute('aria-controls')).hidden=!on;});
+  })});
+
+  $('copy').addEventListener('click',function(){
+    var out=$('email');
     function sel(){var s=getSelection(),g=document.createRange();g.selectNodeContents(out);s.removeAllRanges();s.addRange(g);}
-    try{navigator.clipboard.writeText(out.textContent).then(function(){ok.hidden=false},sel)}catch(e){sel()}
+    try{navigator.clipboard.writeText(out.textContent).then(function(){$('mailnote').textContent='Dirección copiada.'},sel)}catch(e){sel()}
   });
 })();
 </script>
