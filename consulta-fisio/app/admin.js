@@ -399,12 +399,15 @@ function drawPatientForm() {
   $("#patient-card").innerHTML = '<form class="form" id="pt-form"><h2>Nuevo paciente</h2>' +
     '<div class="two"><label>Nombre o iniciales<input type="text" id="pt-name" required maxlength="120"></label><label>Código (opcional)<input type="text" id="pt-code" maxlength="20" placeholder="P-003"></label></div>' +
     '<div class="two"><label>Email<input type="email" id="pt-email" required></label><label>Teléfono (con prefijo)<input type="tel" id="pt-phone" placeholder="+34 600 000 000"></label></div>' +
-    '<p class="muted small">El paciente entra al portal con este email. Solo verá lo que le asignes.</p>' +
+    '<label>DNI/NIE (opcional)<input type="text" id="pt-dni" maxlength="12" placeholder="12345678Z" autocomplete="off"></label>' +
+    '<p class="muted small">El paciente entra al portal con este email. Solo verá lo que le asignes. Con el DNI/NIE podrás proteger con contraseña los PDF que le envíes.</p>' +
     '<p class="err" id="pt-err" hidden></p><button class="pill" type="submit" style="align-self:flex-start">Guardar paciente</button></form>';
   $("#pt-form").onsubmit = async (e) => {
     e.preventDefault();
+    const dni = normDni($("#pt-dni").value);
+    if (dni && !validDni(dni)) { $("#pt-err").textContent = "El DNI/NIE no es válido: revisa los números y la letra."; $("#pt-err").hidden = false; return; }
     try {
-      currentPatient = await must(sb.from("patients").insert({ full_name: $("#pt-name").value.trim(), code: $("#pt-code").value.trim() || null, email: $("#pt-email").value.trim().toLowerCase(), phone: $("#pt-phone").value.trim() || null }).select().single());
+      currentPatient = await must(sb.from("patients").insert({ full_name: $("#pt-name").value.trim(), code: $("#pt-code").value.trim() || null, email: $("#pt-email").value.trim().toLowerCase(), phone: $("#pt-phone").value.trim() || null, dni_nie: dni || null }).select().single());
       loadPatients();
     } catch (err) { $("#pt-err").textContent = /duplicate/.test(err.message) ? "Ya existe un paciente con ese email o código." : /row-level/.test(err.message) ? "Tu plan no permite dar de alta pacientes ahora mismo. Revisa Ajustes." : err.message; $("#pt-err").hidden = false; }
   };
@@ -413,7 +416,14 @@ function drawPatientForm() {
 function drawPatientCard() {
   const host = $("#patient-card"), p = currentPatient;
   if (!p) { host.innerHTML = '<p class="muted">Elige un paciente para ver su ficha y asignarle programas.</p>'; return; }
-  host.innerHTML = '<div class="stack"><div><h2>' + esc(p.full_name) + '</h2><p class="muted small">' + [p.code, p.email, p.phone].filter(Boolean).map(esc).join(" · ") + (p.user_id ? " · ya ha entrado en el portal" : " · aún no ha entrado en el portal") + "</p></div></div>";
-  drawPatientPrograms(p, host);
+  host.innerHTML = '<div class="stack"><div><h2>' + esc(p.full_name) + '</h2><p class="muted small">' + [p.code, p.email, p.phone].filter(Boolean).map(esc).join(" · ") + (p.user_id ? " · ya ha entrado en el portal" : " · aún no ha entrado en el portal") + (p.consent_at ? " · consentimiento el " + new Date(p.consent_at).toLocaleDateString("es-ES") : "") + "</p></div>" +
+    '<form class="chatform" id="dni-form"><input type="text" id="dni-input" maxlength="12" autocomplete="off" aria-label="DNI o NIE" placeholder="DNI/NIE (opcional)" value="' + esc(p.dni_nie || "") + '"><button class="ghost on-white" type="submit">Guardar DNI/NIE</button></form></div>';
+  $("#dni-form").onsubmit = async (e) => {
+    e.preventDefault();
+    const dni = normDni($("#dni-input").value);
+    if (dni && !validDni(dni)) return toast("El DNI/NIE no es válido: revisa los números y la letra.", true);
+    try { await must(sb.from("patients").update({ dni_nie: dni || null }).eq("id", p.id)); toast(dni ? "DNI/NIE guardado." : "DNI/NIE eliminado."); loadPatients(); } catch (err) { toast(err.message, true); }
+  };
+  drawPatientPrograms(p, host).then(() => drawActivity(p, host));
 }
 

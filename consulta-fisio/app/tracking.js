@@ -5,7 +5,7 @@ const rxHead = (title) => '<div class="dlghead"><h2>' + esc(title) + '</h2><butt
 const wireClose = () => ($("#rx-close").onclick = () => rx.close());
 
 async function fetchPrograms(filter) {
-  let q = sb.from("patient_programs").select("*, patients(id,full_name,code,email,phone), exercise_logs(id,program_exercise_id,log_date,completed,pain_eva,effort_rpe,patient_notes,created_at)").order("created_at", { ascending: false });
+  let q = sb.from("patient_programs").select("*, patients(id,full_name,code,email,phone,dni_nie), exercise_logs(id,program_exercise_id,log_date,completed,pain_eva,effort_rpe,patient_notes,created_at)").order("created_at", { ascending: false });
   if (filter) q = filter(q);
   return must(q);
 }
@@ -50,6 +50,18 @@ async function drawPatientPrograms(p, host) {
   $(".stack", host).appendChild(box);
   $("#pt-rx", box).onclick = () => openPrescribe(p);
   $$("[data-evo]", box).forEach((b) => (b.onclick = () => openEvolution(b.dataset.evo)));
+}
+
+/* Registro de actividad de la ficha: quién hizo qué y cuándo (lo anota la base de datos, no se puede editar). */
+async function drawActivity(p, host) {
+  const { data } = await sb.from("audit_log").select("at,actor_role,action,entity").eq("patient_id", p.id).order("at", { ascending: false }).limit(12);
+  if (currentPatient !== p || !data || !data.length || !$(".stack", host)) return;
+  const what = { patients: "la ficha", patient_programs: "un programa asignado", accesses: "un acceso a contenido", exercise_logs: "un registro de sesión", program_messages: "un mensaje" };
+  const verb = { insert: "creó", update: "modificó", delete: "eliminó" };
+  const box = document.createElement("div");
+  box.innerHTML = "<h3>Actividad reciente</h3>" + '<ul class="small muted" style="margin:8px 0 0;padding-left:18px">' + data.map((a) =>
+    "<li>" + new Date(a.at).toLocaleString("es-ES", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) + " · " + esc(a.actor_role) + " " + (verb[a.action] || a.action) + " " + (what[a.entity] || a.entity) + "</li>").join("") + "</ul>";
+  $(".stack", host).appendChild(box);
 }
 
 /* ------------------------------------------------------------ asignador rápido */
@@ -139,8 +151,33 @@ async function openEvolution(programId, refresh) {
     (g.clinical_notes ? '<div><h3>Notas clínicas</h3><p class="muted">' + esc(g.clinical_notes) + "</p></div>" : "") +
     "<div><h3>Historial de sesiones</h3>" + (sessions.length ? '<div class="tablewrap"><table class="track" style="min-width:480px"><thead><tr><th>Fecha</th><th>Dolor</th><th>Esfuerzo</th><th>Comentario del paciente</th></tr></thead><tbody>' +
       sessions.slice().reverse().map((l) => "<tr><td>" + shortDate(l.log_date) + "</td><td>" + (l.pain_eva == null ? "—" : levelChip(l.pain_eva >= 6 ? "red" : l.pain_eva >= 4 ? "amber" : "green", l.pain_eva + " / 10")) + "</td><td>" + (l.effort_rpe == null ? "—" : l.effort_rpe + " / 10") + "</td><td>" + (esc(l.patient_notes) || '<span class="muted">—</span>') + "</td></tr>").join("") + "</tbody></table></div>" : '<p class="muted small">Sin sesiones registradas.</p>') + "</div>" +
+    '<div class="stack" style="gap:10px"><h3>Informe e infografía en PDF</h3>' +
+    (g.patients.dni_nie ? '<label class="check" style="margin:0"><input type="checkbox" id="pdf-protect" checked> Proteger PDF con contraseña (DNI/NIE del paciente)</label>'
+      : '<p class="muted small">Este paciente no tiene DNI/NIE en su ficha: los PDF se generan sin contraseña.</p>') +
+    '<div class="actions"><button class="ghost on-white sm" type="button" id="pdf-report">Descargar informe de evolución</button><button class="ghost on-white sm" type="button" id="pdf-sheet">Descargar infografía y rutina</button>' +
+    (navigator.canShare && matchMedia("(pointer:coarse)").matches ? '<button class="ghost on-white sm" type="button" id="pdf-share">Compartir informe…</button>' : "") +
+    '<a class="ghost on-white sm" id="pdf-wa" target="_blank" rel="noopener">Avisar por WhatsApp</a></div>' +
+    '<p class="muted small">Un enlace de WhatsApp no puede llevar el archivo adjunto: descárgalo y adjúntalo en la conversación, o usa «Compartir» desde el móvil.</p></div>' +
     '<div><h3>Chat con el paciente</h3><div class="chat" id="evo-chat">' + chatHtml(msgs, "therapist") + '</div><form class="chatform" id="evo-form" style="margin-top:10px"><textarea id="evo-msg" maxlength="2000" required aria-label="Mensaje" placeholder="Escribe al paciente…"></textarea><button class="pill" type="submit">Enviar</button></form></div>';
   wireClose(); wireCharts(rxBody);
+  // PDF: la contraseña es el DNI/NIE normalizado; el cifrado se hace en este navegador, el DNI no sale de aquí.
+  const dni = g.patients.dni_nie, pw = () => (dni && $("#pdf-protect").checked ? dni : null);
+  const base = { clinic: bill ? bill.name : "", patient: g.patients.full_name };
+  const report = () => buildReportPdf(Object.assign({ program: g, stats: s, sessions, weekly: weeklyAdherence(g, logs), password: pw() }, base));
+  const setWa = () => {
+    const text = "Hola" + (g.patients.full_name ? " " + g.patients.full_name.split(" ")[0] : "") + ", te envío en PDF tu informe de «" + g.title + "»." +
+      (pw() ? "\nPor seguridad RGPD, la contraseña para abrir tu informe PDF es tu DNI/NIE con letra en mayúscula." : "");
+    $("#pdf-wa").href = "https://wa.me/" + (g.patients.phone || "").replace(/\D/g, "") + "?text=" + encodeURIComponent(text);
+  };
+  setWa(); if ($("#pdf-protect")) $("#pdf-protect").onchange = setWa;
+  const run = async (btn, fn) => { btn.disabled = true; try { await fn(); } catch (err) { toast(err.message, true); } btn.disabled = false; };
+  $("#pdf-report").onclick = (e) => run(e.currentTarget, async () => saveBlob(await report(), "informe-evolucion.pdf"));
+  if ($("#pdf-share")) $("#pdf-share").onclick = (e) => run(e.currentTarget, async () => shareOrSave(await report(), "informe-evolucion.pdf"));
+  $("#pdf-sheet").onclick = (e) => run(e.currentTarget, async () => {
+    const prod = products.find((x) => x.id === g.product_id) || {};
+    const exercises = await must(sb.from("program_exercises").select("*").eq("program_id", g.id).order("position"));
+    saveBlob(await buildSheetPdf(Object.assign({ title: g.title, region: prod.body_region, pathology: prod.pathology_type, sheet: prod.sheet || {}, exercises, notes: g.clinical_notes, password: pw() }, base)), "infografia-y-rutina.pdf");
+  });
   const chat = $("#evo-chat"); chat.scrollTop = chat.scrollHeight;
   $("#evo-status").onchange = async (e) => { try { await must(sb.from("patient_programs").update({ status: e.target.value }).eq("id", g.id)); toast("Estado actualizado."); refreshBilling(); } catch (err) { toast(/row-level/.test(err.message) ? "Tu plan no admite más pacientes activos." : err.message, true); } };
   // Retirar el programa quita también el acceso del paciente a su infografía, salvo que tenga otro plan del mismo programa.

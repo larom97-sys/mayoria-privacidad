@@ -91,7 +91,9 @@ async function drawBilling() {
     ((invites || []).length ? '<div class="rows">' + invites.map((i) => "<div><span>" + esc(i.email) + ' <span class="muted small">· invitación pendiente</span></span><button class="ghost sm on-white" data-uninvite="' + i.id + '">Cancelar</button></div>').join("") + "</div>" : "") +
     (b.is_admin ? '<form class="chatform" id="inv-form"><input type="email" id="inv-email" required placeholder="email@delfisio.es" aria-label="Email del fisioterapeuta"><button class="pill" type="submit">Invitar</button></form>' : "") + "</div>" +
 
-    '<div class="panel stack"><h2>Datos de la clínica</h2><form class="chatform" id="cl-form"><input type="text" id="cl-name" required maxlength="80" aria-label="Nombre de la clínica" value="' + esc(b.name) + '"><button class="ghost on-white" type="submit">Guardar nombre</button></form></div>' +
+    '<div class="panel stack"><h2>Datos de la clínica</h2><form class="chatform" id="cl-form"><input type="text" id="cl-name" required maxlength="80" aria-label="Nombre de la clínica" value="' + esc(b.name) + '"><button class="ghost on-white" type="submit">Guardar nombre</button></form>' +
+    '<div><h3>Tus datos son tuyos</h3><p class="muted small">Descarga pacientes, programas, ejercicios, registros de sesión y mensajes en un ZIP con archivos CSV. Disponible siempre, también con la suscripción inactiva.</p>' +
+    '<button class="ghost on-white" type="button" id="export-all" style="margin-top:10px">Exportar todos los datos</button></div></div>' +
 
     (b.simulation && isLocal ? '<div class="panel stack" style="border:1.5px dashed var(--hair)"><h3>Simulación (solo pruebas)</h3><p class="muted small">Cambia el estado de la clínica sin pasar por Stripe. Solo aparece en local y con la simulación activada en la base de datos.</p><div class="actions">' +
       ["trial", "expired", "canceled", "autonomo", "clinica", "multicentro"].map((s) => '<button class="ghost on-white sm" type="button" data-sim="' + s + '">' + s + "</button>").join("") + "</div></div>" : "");
@@ -122,7 +124,32 @@ async function drawBilling() {
   };
   $$("[data-uninvite]", host).forEach((x) => (x.onclick = async () => { const { error } = await sb.from("clinic_invites").delete().eq("id", x.dataset.uninvite); if (error) return toast(error.message, true); refreshBilling(); }));
   $("#cl-form").onsubmit = async (e) => { e.preventDefault(); const { error } = await sb.from("clinics").update({ name: $("#cl-name").value.trim() }).eq("id", b.clinic_id); if (error) return toast(error.message, true); toast("Nombre guardado."); refreshBilling(); };
+  $("#export-all").onclick = async (e) => { const btn = e.currentTarget; btn.disabled = true; try { await exportAll(); } catch (err) { toast(err.message, true); } btn.disabled = false; };
   $$("[data-sim]", host).forEach((x) => (x.onclick = async () => { const { error } = await sb.rpc("simulate_billing", { p_state: x.dataset.sim }); if (error) return toast(error.message, true); refreshBilling(); }));
+}
+
+/* Exportación completa en formato abierto: un ZIP con un CSV por tabla (UTF-8 con BOM, para que Excel lo abra bien). */
+function toCsv(rows, cols) {
+  const cell = (v) => {
+    let s = v == null ? "" : Array.isArray(v) ? v.join(" ") : String(v);
+    if (/^[=+\-@]/.test(s)) s = "'" + s; // evita que una hoja de cálculo lo interprete como fórmula
+    return /[",\n;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
+  return "﻿" + cols.join(",") + "\n" + rows.map((r) => cols.map((c) => cell(r[c])).join(",")).join("\n") + "\n";
+}
+async function exportAll() {
+  if (!window.fflate) await loadScript("vendor/fflate.js");
+  const all = async (table, cols) => toCsv(await must(sb.from(table).select(cols.join(",")).limit(100000)), cols);
+  const files = {
+    "pacientes.csv": await all("patients", ["id", "code", "full_name", "email", "phone", "dni_nie", "consent_at", "created_at"]),
+    "programas_asignados.csv": await all("patient_programs", ["id", "patient_id", "title", "start_date", "weekdays", "status", "clinical_notes", "created_at"]),
+    "ejercicios.csv": await all("program_exercises", ["id", "program_id", "position", "name", "sets", "reps", "load", "rest", "pain", "instructions"]),
+    "registros_de_sesion.csv": await all("exercise_logs", ["id", "program_id", "program_exercise_id", "patient_id", "log_date", "completed", "pain_eva", "effort_rpe", "patient_notes", "created_at"]),
+    "mensajes.csv": await all("program_messages", ["id", "program_id", "sender", "body", "created_at"])
+  };
+  const zip = fflate.zipSync(Object.fromEntries(Object.entries(files).map(([k, v]) => [k, fflate.strToU8(v)])));
+  saveBlob(new Blob([zip], { type: "application/zip" }), "datos-clinica-" + localISO() + ".zip");
+  toast("Exportación descargada.");
 }
 
 boot();
