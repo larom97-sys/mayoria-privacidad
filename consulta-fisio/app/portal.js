@@ -1,76 +1,180 @@
-/* Portal del paciente: escaparate público y área privada «Mis programas». */
-const view = $("#view");
-let session = null, catalog = [], mine = [], doneIds = new Set(), afterLogin = null;
+/* Portal del paciente: catálogo con filtros dobles, ficha del programa, suscripción o compra y «Mis programas». */
+const view = $("#view"), unlock = $("#unlock");
+let session = null, patientId = null, catalog = [], owned = new Map(), sub = null, settings = { subscription_name: "Acceso total", subscription_price_cents: 1499 }, afterLogin = null;
+let filters = { region: "", path: "" };
 const SIGNED_SECONDS = 3600; // las URL firmadas de vídeos y PDF caducan en una hora
+const money = (cents) => (cents / 100).toLocaleString("es-ES", { style: "currency", currency: "EUR" });
+const here = () => location.href.split("#")[0];
 
-async function refreshSession() {
+/* Regla de acceso en el cliente (la que manda es la del servidor):
+   suscripción activa O compra individual O asignado por el fisio. */
+const subActive = () => !!sub && ["active", "trialing"].includes(sub.status) && (!sub.current_period_end || new Date(sub.current_period_end) > new Date());
+const hasAccess = (id) => owned.has(id) || (subActive() && catalog.some((p) => p.id === id));
+
+async function refresh() {
   session = (await sb.auth.getSession()).data.session;
   $("#session").textContent = session ? "Salir" : "Entrar";
-  if (session) {
-    const name = session.user.user_metadata?.name || null;
-    const { error } = await sb.rpc("ensure_patient", { p_name: name });
-    if (error) toast("No hemos podido abrir tu ficha: " + error.message, true);
-  }
+  const [cat, set] = await Promise.all([sb.rpc("store_catalog"), sb.from("settings").select("*").single()]);
+  catalog = cat.data || [];
+  if (set.data) settings = set.data;
+  owned = new Map(); sub = null; patientId = null;
+  if (!session) return;
+  const { data: pid, error } = await sb.rpc("ensure_patient", { p_name: session.user.user_metadata?.name || null });
+  if (error) return toast("No hemos podido abrir tu ficha: " + error.message, true);
+  patientId = pid;
+  const [a, s] = await Promise.all([
+    sb.from("accesses").select("method, acquired_at, infoproducts(id,title,description,body_region,pathology_type,cover_path,price_cents)"),
+    sb.from("subscriptions").select("*").maybeSingle()
+  ]);
+  (a.data || []).filter((x) => x.infoproducts).forEach((x) => owned.set(x.infoproducts.id, x));
+  sub = s.data;
 }
 $("#session").onclick = async () => {
-  if (session) { await sb.auth.signOut(); mine = []; doneIds = new Set(); await refreshSession(); location.hash = "#tienda"; route(); }
-  else { afterLogin = "#mis-programas"; drawLogin(); }
+  if (session) { await sb.auth.signOut(); await refresh(); location.hash = "#tienda"; route(); }
+  else { afterLogin = location.hash || "#mis-programas"; drawLogin(); }
 };
 
-async function loadMine() {
-  if (!session) { mine = []; doneIds = new Set(); return; }
-  const [a, d] = await Promise.all([
-    sb.from("accesses").select("method, acquired_at, infoproducts(id,title,description,category,cover_path, lessons(id,title,kind,file_path,external_url,position))").order("acquired_at", { ascending: false }),
-    sb.from("lesson_progress").select("lesson_id")
-  ]);
-  mine = (a.data || []).filter((x) => x.infoproducts).map((x) => { x.infoproducts.lessons.sort((p, q) => p.position - q.position); return x; });
-  doneIds = new Set((d.data || []).map((x) => x.lesson_id));
-}
-const owns = (id) => mine.some((a) => a.infoproducts.id === id);
-
 function drawLogin() {
+  unlock.open && unlock.close();
   renderAuth(view, { title: "Tu cuenta", intro: "Entra o crea tu cuenta para ver y conseguir tus programas.", askName: true, onDone: async () => {
-    await refreshSession(); await loadMine();
+    await refresh();
     const next = afterLogin || "#mis-programas"; afterLogin = null;
     if (location.hash === next) route(); else location.hash = next;
   } });
 }
 
-/* ------------------------------------------------------------ tienda */
-async function drawShop(focusId) {
-  const { data, error } = await sb.rpc("catalog");
-  if (error) { view.innerHTML = '<div class="empty">No se ha podido cargar la tienda.</div>'; return; }
-  catalog = data;
-  const cats = ["Todos", ...new Set(catalog.map((p) => p.category).filter(Boolean))];
-  let current = "Todos";
-  const draw = () => {
-    const list = catalog.filter((p) => current === "Todos" || p.category === current);
-    view.innerHTML = '<div class="pagehead"><div><h1>Programas y guías</h1><p class="muted">Ejercicios en vídeo, guías y cursos para seguir tu tratamiento en casa.</p></div></div>' +
-      (cats.length > 2 ? '<div class="actions" style="margin-bottom:24px">' + cats.map((c, i) => '<button class="tab" type="button" id="cat-' + i + '" aria-current="' + (c === current) + '" data-cat="' + esc(c) + '" style="background:' + (c === current ? "" : "var(--white)") + '">' + esc(c) + "</button>").join("") + "</div>" : "") +
-      (list.length ? '<div class="grid">' + list.map((p) =>
-        '<article class="card hover" id="producto-' + p.id + '"><div class="cover"' + coverStyle(p.cover_path) + "></div>" +
-        '<div class="body"><span class="muted small">' + esc(p.category || "Programa") + " · " + p.lesson_count + (p.lesson_count === 1 ? " lección" : " lecciones") + "</span><h3>" + esc(p.title) + '</h3><p class="muted">' + esc(p.description) + "</p>" +
-        '<div class="row"><span class="amt">' + euros(p.price_cents) + '</span><button class="pill sm" type="button" data-get="' + p.id + '">' + (owns(p.id) ? "Abrir" : p.price_cents ? "Comprar" : "Conseguir gratis") + "</button></div></div></article>").join("") + "</div>"
-        : '<div class="empty">Pronto habrá programas disponibles.</div>') +
-      '<p class="muted small" style="text-align:center;margin-top:32px">Estos programas no sustituyen a la valoración de tu fisioterapeuta.</p>';
-    $$("[data-cat]", view).forEach((b) => (b.onclick = () => { current = b.dataset.cat; draw(); }));
-    $$("[data-get]", view).forEach((b) => (b.onclick = () => getProduct(b.dataset.get, b)));
+const planBanner = () => subActive()
+  ? '<div class="plan noprint"><div><b>' + esc(settings.subscription_name) + ' activa</b><br><span class="muted small">Tienes acceso a todos los programas' + (sub.current_period_end ? " · " + (sub.cancel_at_period_end ? "termina el " : "se renueva el ") + new Date(sub.current_period_end).toLocaleDateString("es-ES") : "") + '</span></div><button class="ghost" type="button" id="manage">Gestionar suscripción</button></div>'
+  : '<div class="plan noprint"><div><b>' + esc(settings.subscription_name) + " · " + money(settings.subscription_price_cents) + ' al mes</b><br><span class="muted small">Todos los programas actuales y futuros mientras la suscripción esté activa.</span></div><button class="pill" type="button" id="subscribe">Suscribirme</button></div>';
+function wirePlan() {
+  if ($("#subscribe")) $("#subscribe").onclick = (e) => checkout("subscription", null, e.currentTarget);
+  if ($("#manage")) $("#manage").onclick = async (e) => {
+    e.currentTarget.disabled = true;
+    const { data, error } = await sb.functions.invoke("manage-subscription", { body: { return_url: here() + "#mis-programas" } });
+    if (error || !data?.url) { e.currentTarget.disabled = false; return toast("No se ha podido abrir la gestión de la suscripción.", true); }
+    location.href = data.url;
   };
-  draw();
-  if (focusId) document.getElementById("producto-" + focusId)?.scrollIntoView({ block: "center" });
 }
 
-async function getProduct(id, btn) {
-  if (owns(id)) { location.hash = "#programa-" + id; return; }
-  if (!session) { afterLogin = "#producto-" + id; return drawLogin(); }
-  const p = catalog.find((x) => x.id === id);
-  btn.disabled = true;
-  if (!p.price_cents) {
-    const { error } = await sb.rpc("claim_free_product", { p_product: id });
-    if (error) { btn.disabled = false; return toast("No se ha podido añadir: " + error.message, true); }
-    await loadMine(); location.hash = "#programa-" + id; return;
+const card = (p, foot) => '<a class="card hover" href="#producto-' + p.id + '" style="text-decoration:none;color:inherit">' + coverBlock(p) +
+  '<div class="body"><span class="muted small">' + esc(p.body_region || "") + " · " + esc(p.pathology_type || "") + "</span><h3>" + esc(p.title) + '</h3><p class="muted">' + esc(p.description) + "</p>" + foot + "</div></a>";
+
+/* ------------------------------------------------------------ catálogo con filtros combinables */
+function drawShop() {
+  const regions = REGIONS.filter((r) => catalog.some((p) => p.body_region === r)), paths = PATHOLOGIES.filter((t) => catalog.some((p) => p.pathology_type === t));
+  const sel = (id, label, list, cur) => "<label>" + label + '<select id="' + id + '"><option value="">Todas</option>' + list.map((x) => '<option value="' + esc(x) + '"' + (x === cur ? " selected" : "") + ">" + esc(x) + "</option>").join("") + "</select></label>";
+  const list = catalog.filter((p) => (!filters.region || p.body_region === filters.region) && (!filters.path || p.pathology_type === filters.path));
+  view.innerHTML = '<div class="pagehead"><div><h1>Programas de rehabilitación</h1><p class="muted">Fichas de cada lesión y protocolos de ejercicio paso a paso.</p></div></div>' + planBanner() +
+    '<div class="filters">' + sel("f-region", "Localización anatómica", regions, filters.region) + sel("f-path", "Tipo de patología", paths, filters.path) +
+    '<button class="ghost" type="button" id="f-clear"' + (filters.region || filters.path ? "" : " disabled") + ">Quitar filtros</button></div>" +
+    '<p class="muted small" id="count" style="margin-bottom:14px">' + list.length + (list.length === 1 ? " programa" : " programas") + "</p>" +
+    (list.length ? '<div class="grid">' + list.map((p) => card(p, '<div class="row"><span class="amt">' + (hasAccess(p.id) ? "Tuyo" : euros(p.price_cents)) + '</span><span class="muted small">' + p.exercise_count + " ejercicios</span></div>")).join("") + "</div>"
+      : '<div class="empty">' + (catalog.length ? "Ningún programa coincide con esos filtros." : "Pronto habrá programas disponibles.") + "</div>") +
+    '<p class="muted small" style="text-align:center;margin-top:32px">Material educativo. No sustituye a la valoración de tu fisioterapeuta.</p>';
+  $("#f-region").onchange = (e) => { filters.region = e.target.value; drawShop(); };
+  $("#f-path").onchange = (e) => { filters.path = e.target.value; drawShop(); };
+  $("#f-clear").onclick = () => { filters = { region: "", path: "" }; drawShop(); };
+  wirePlan();
+}
+
+/* ------------------------------------------------------------ mis programas */
+function drawMine() {
+  if (!session) { afterLogin = "#mis-programas"; return drawLogin(); }
+  const mine = subActive() ? catalog.concat([...owned.values()].map((a) => a.infoproducts).filter((p) => !catalog.some((c) => c.id === p.id))) : [...owned.values()].map((a) => a.infoproducts);
+  view.innerHTML = '<div class="pagehead"><h1>Mis programas</h1></div>' + planBanner() + (mine.length ? '<div class="grid">' + mine.map((p) => {
+    const a = owned.get(p.id);
+    return card(p, '<div class="row"><span class="chip ok">' + (a ? METHOD_LABEL[a.method] : "Incluido en tu suscripción") + "</span></div>");
+  }).join("") + "</div>" : '<div class="empty">Todavía no tienes programas. <a href="#tienda">Ver el catálogo</a></div>');
+  wirePlan();
+}
+
+/* ------------------------------------------------------------ ficha del programa */
+async function drawProduct(id) {
+  let p = catalog.find((x) => x.id === id) || owned.get(id)?.infoproducts;
+  if (!p) { view.innerHTML = '<div class="empty">Este programa no está disponible. <a href="#tienda">Ver el catálogo</a></div>'; return; }
+  const head = '<p class="small noprint" style="margin-bottom:12px"><a href="#tienda">‹ Catálogo</a></p><div class="pagehead"><div><h1>' + esc(p.title) + '</h1><p class="muted">' + esc(p.description) + "</p></div>";
+  if (!session || !hasAccess(id)) {
+    view.innerHTML = head + "</div>" +
+      '<div class="panel stack"><p><span class="chip">' + esc(p.body_region || "") + '</span> <span class="chip">' + esc(p.pathology_type || "") + "</span></p>" +
+      "<h2>Qué incluye</h2><ul style=\"margin:0;padding-left:20px\"><li>Ficha de la lesión: qué es, fases y tiempos orientativos</li><li>Banderas rojas: cuándo parar y consultar</li><li>" + (p.exercise_count || 0) + " ejercicios progresivos con diagramas, series, repeticiones y errores a evitar</li>" + (p.lesson_count ? "<li>" + p.lesson_count + " archivos o vídeos adicionales</li>" : "") + "<li>Guía imprimible en PDF</li></ul>" +
+      '<div class="actions"><button class="pill" type="button" id="open-unlock">' + (p.price_cents ? "Desbloquear programa" : "Conseguir gratis") + "</button></div></div>";
+    $("#open-unlock").onclick = () => p.price_cents ? drawUnlock(p) : claimFree(p, $("#open-unlock"));
+    return;
   }
-  const { data, error } = await sb.functions.invoke("create-checkout", { body: { product_id: id, return_url: location.href.split("#")[0] + "#mis-programas" } });
+  const [c, l, d, ld] = await Promise.all([
+    sb.from("product_content").select("sheet").eq("product_id", id).maybeSingle(),
+    sb.from("lessons").select("id,title,kind,file_path,external_url,position").eq("product_id", id).order("position"),
+    sb.from("exercise_progress").select("exercise_key").eq("product_id", id),
+    sb.from("lesson_progress").select("lesson_id")
+  ]);
+  const sheet = c.data?.sheet || {}, lessons = l.data || [], done = new Set((d.data || []).map((x) => x.exercise_key)), lessonDone = new Set((ld.data || []).map((x) => x.lesson_id));
+  view.innerHTML = head + '<button class="ghost noprint" type="button" id="print">Imprimir o guardar en PDF</button></div>' + renderSheet(p, sheet, { interactive: true, done }) +
+    (lessons.length ? '<section class="panel noprint" style="margin-top:20px"><h2>Archivos y vídeos</h2><ul class="lessonlist">' + lessons.map((x) =>
+      '<li><input type="checkbox" id="done-' + x.id + '" data-lesson="' + x.id + '" aria-label="Visto: ' + esc(x.title) + '"' + (lessonDone.has(x.id) ? " checked" : "") + '><button type="button" data-open="' + x.id + '">' + esc(x.title) + ' <span class="muted small">· ' + KIND_LABEL[x.kind].split(" ")[0] + "</span></button></li>").join("") + '</ul><div id="stage" class="stack" style="margin-top:14px"></div></section>' : "");
+  $("#print").onclick = () => window.print();
+  $$("[data-ex]", view).forEach((box) => (box.onchange = async () => {
+    const q = box.checked ? sb.from("exercise_progress").upsert({ patient_id: patientId, product_id: id, exercise_key: box.dataset.ex }) : sb.from("exercise_progress").delete().eq("patient_id", patientId).eq("product_id", id).eq("exercise_key", box.dataset.ex);
+    const { error } = await q;
+    if (error) { box.checked = !box.checked; return toast("No se ha podido guardar el progreso.", true); }
+    box.checked ? done.add(box.dataset.ex) : done.delete(box.dataset.ex);
+    const ex = sheet.exercises || [], n = ex.filter((e) => done.has(e.key)).length;
+    $(".sheet .progress i").style.width = Math.round((n / ex.length) * 100) + "%";
+    $(".sheet .progress + p").textContent = n + " de " + ex.length + " ejercicios completados hoy";
+  }));
+  $$("[data-lesson]", view).forEach((box) => (box.onchange = async () => {
+    const q = box.checked ? sb.from("lesson_progress").upsert({ patient_id: patientId, lesson_id: box.dataset.lesson }) : sb.from("lesson_progress").delete().eq("patient_id", patientId).eq("lesson_id", box.dataset.lesson);
+    const { error } = await q;
+    if (error) { box.checked = !box.checked; toast("No se ha podido guardar el progreso.", true); }
+  }));
+  $$("[data-open]", view).forEach((b) => (b.onclick = () => openLesson(lessons.find((x) => x.id === b.dataset.open))));
+}
+
+async function openLesson(l) {
+  const stage = $("#stage");
+  $$("[data-open]").forEach((b) => b.setAttribute("aria-current", b.dataset.open === l.id));
+  let html = "<h3>" + esc(l.title) + "</h3>";
+  if (l.kind === "video" || l.kind === "pdf") {
+    const opts = l.kind === "pdf" ? { download: l.file_path.split("/").pop().replace(/^[0-9a-f-]{36}-/, "") } : undefined;
+    const { data, error } = await sb.storage.from("content").createSignedUrl(l.file_path, SIGNED_SECONDS, opts);
+    if (error) { stage.innerHTML = html + '<p class="err">No se ha podido abrir este archivo.</p>'; return; }
+    html += l.kind === "video"
+      ? '<div class="frame"><video controls playsinline preload="metadata" src="' + esc(data.signedUrl) + '"></video></div>'
+      : '<p class="muted small">El enlace de descarga es personal y caduca en una hora.</p><div class="actions"><a class="pill" href="' + esc(data.signedUrl) + '">Descargar PDF</a></div>';
+  } else if (l.kind === "embed") {
+    const src = embedSrc(l.external_url);
+    html += src ? '<div class="frame"><iframe src="' + esc(src) + '" title="' + esc(l.title) + '" allow="fullscreen; picture-in-picture; encrypted-media" allowfullscreen loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe></div>' : '<p class="err">Este vídeo no se puede mostrar.</p>';
+  } else {
+    html += isHttps(l.external_url) ? '<div class="actions"><a class="pill" target="_blank" rel="noopener" href="' + esc(l.external_url) + '">Abrir enlace</a></div>' : "";
+  }
+  stage.innerHTML = html;
+}
+
+/* ------------------------------------------------------------ suscripción frente a compra única */
+function drawUnlock(p) {
+  $("#unlock-body").innerHTML = '<div class="dlghead"><h2>Cómo quieres acceder</h2><button class="iconbtn" id="un-close" aria-label="Cerrar" style="background:var(--grey)">✕</button></div>' +
+    '<div class="choices"><div class="choice best"><span class="chip ok" style="align-self:flex-start">Todo incluido</span><h3>' + esc(settings.subscription_name) + '</h3><span class="amt">' + money(settings.subscription_price_cents) + ' <span class="muted small">al mes</span></span>' +
+    '<p class="muted small">Todos los programas actuales y futuros mientras la suscripción esté activa. Puedes cancelarla cuando quieras.</p><button class="pill" type="button" id="un-sub">Suscribirme</button></div>' +
+    '<div class="choice"><span class="chip" style="align-self:flex-start">Pago único</span><h3>Solo este programa</h3><span class="amt">' + money(p.price_cents) + "</span>" +
+    '<p class="muted small">«' + esc(p.title) + '» con acceso para siempre, sin suscripción.</p><button class="ghost" type="button" id="un-buy">Comprar</button></div></div>' +
+    '<p class="muted small">Si tu fisioterapeuta te ha asignado este programa, aparecerá en «Mis programas» sin coste.</p>';
+  $("#un-close").onclick = () => unlock.close();
+  $("#un-sub").onclick = (e) => checkout("subscription", null, e.currentTarget, p.id);
+  $("#un-buy").onclick = (e) => checkout("product", p.id, e.currentTarget, p.id);
+  unlock.showModal();
+}
+
+async function claimFree(p, btn) {
+  if (!session) { afterLogin = "#producto-" + p.id; return drawLogin(); }
+  btn.disabled = true;
+  const { error } = await sb.rpc("claim_free_product", { p_product: p.id });
+  if (error) { btn.disabled = false; return toast("No se ha podido añadir: " + error.message, true); }
+  await refresh(); drawProduct(p.id);
+}
+
+async function checkout(kind, productId, btn, backTo) {
+  if (!session) { afterLogin = backTo ? "#producto-" + backTo : "#tienda"; return drawLogin(); }
+  btn.disabled = true;
+  const { data, error } = await sb.functions.invoke("create-checkout", { body: { kind, product_id: productId, return_url: here() + (backTo ? "#producto-" + backTo : "#mis-programas") } });
   if (error || !data?.url) {
     btn.disabled = false;
     return toast("El pago online todavía no está activado. Pide el acceso en tu clínica.", true);
@@ -78,70 +182,15 @@ async function getProduct(id, btn) {
   location.href = data.url;
 }
 
-/* ------------------------------------------------------------ mis programas */
-function drawMine() {
-  if (!session) { afterLogin = "#mis-programas"; return drawLogin(); }
-  view.innerHTML = '<div class="pagehead"><h1>Mis programas</h1></div>' + (mine.length ? '<div class="grid">' + mine.map((a) => {
-    const p = a.infoproducts, n = p.lessons.length, d = p.lessons.filter((l) => doneIds.has(l.id)).length;
-    return '<a class="card hover" href="#programa-' + p.id + '" style="text-decoration:none;color:inherit"><div class="cover"' + coverStyle(p.cover_path) + "></div>" +
-      '<div class="body"><span class="muted small">' + esc(p.category || "Programa") + " · " + METHOD_LABEL[a.method] + "</span><h3>" + esc(p.title) + "</h3>" +
-      '<div class="progress" style="margin-top:auto"><i style="width:' + (n ? Math.round((d / n) * 100) : 0) + '%"></i></div><span class="muted small">' + d + " de " + n + " completadas</span></div></a>";
-  }).join("") + "</div>" : '<div class="empty">Todavía no tienes programas. <a href="#tienda">Ver la tienda</a></div>');
-}
-
-async function drawProgram(id, lessonId) {
-  if (!session) { afterLogin = "#programa-" + id; return drawLogin(); }
-  const acc = mine.find((a) => a.infoproducts.id === id);
-  if (!acc) { location.hash = "#producto-" + id; return; }
-  const p = acc.infoproducts;
-  const lesson = p.lessons.find((l) => l.id === lessonId) || p.lessons.find((l) => !doneIds.has(l.id)) || p.lessons[0];
-  const d = p.lessons.filter((l) => doneIds.has(l.id)).length;
-  view.innerHTML = '<p class="small" style="margin-bottom:12px"><a href="#mis-programas">‹ Mis programas</a></p><div class="pagehead"><div><h1>' + esc(p.title) + '</h1><p class="muted">' + esc(p.description) + "</p></div></div>" +
-    '<div class="player"><div class="panel"><div class="progress"><i style="width:' + (p.lessons.length ? Math.round((d / p.lessons.length) * 100) : 0) + '%"></i></div><p class="muted small" style="margin:8px 0 12px">' + d + " de " + p.lessons.length + " completadas</p>" +
-    '<ul class="lessonlist">' + p.lessons.map((l) => '<li><input type="checkbox" id="done-' + l.id + '" data-done="' + l.id + '" aria-label="Completada: ' + esc(l.title) + '"' + (doneIds.has(l.id) ? " checked" : "") + '><button type="button" data-open="' + l.id + '" aria-current="' + (lesson && l.id === lesson.id) + '">' + esc(l.title) + ' <span class="muted small">· ' + KIND_LABEL[l.kind].split(" ")[0] + "</span></button></li>").join("") + "</ul></div>" +
-    '<div class="panel stagebox stack" id="stage">' + (lesson ? "" : '<p class="muted">Este programa aún no tiene contenido.</p>') + "</div></div>";
-  $$("[data-open]", view).forEach((b) => (b.onclick = () => drawProgram(id, b.dataset.open)));
-  $$("[data-done]", view).forEach((c) => (c.onchange = () => setDone(c.dataset.done, c.checked, id, lesson?.id)));
-  if (lesson) drawLesson(lesson, id);
-}
-
-async function setDone(lessonId, done, productId, openId) {
-  const { data: pid } = await sb.rpc("ensure_patient", { p_name: null });
-  const q = done ? sb.from("lesson_progress").upsert({ patient_id: pid, lesson_id: lessonId }) : sb.from("lesson_progress").delete().eq("patient_id", pid).eq("lesson_id", lessonId);
-  const { error } = await q;
-  if (error) toast("No se ha podido guardar el progreso.", true);
-  else done ? doneIds.add(lessonId) : doneIds.delete(lessonId);
-  drawProgram(productId, openId);
-}
-
-async function drawLesson(l, productId) {
-  const stage = $("#stage");
-  const foot = '<div class="actions"><button class="' + (doneIds.has(l.id) ? "ghost on-white" : "pill") + '" type="button" id="mark">' + (doneIds.has(l.id) ? "Marcar como pendiente" : "Marcar como completada") + "</button></div>";
-  let html = "<h2>" + esc(l.title) + "</h2>";
-  if (l.kind === "video" || l.kind === "pdf") {
-    const opts = l.kind === "pdf" ? { download: l.file_path.split("/").pop().replace(/^[0-9a-f-]{36}-/, "") } : undefined;
-    const { data, error } = await sb.storage.from("content").createSignedUrl(l.file_path, SIGNED_SECONDS, opts);
-    if (error) { stage.innerHTML = html + '<p class="err">No se ha podido abrir este archivo.</p>'; return; }
-    html += l.kind === "video"
-      ? '<div class="frame"><video controls playsinline preload="metadata" src="' + esc(data.signedUrl) + '"></video></div>'
-      : '<p class="muted">Guía en PDF. El enlace de descarga es personal y caduca en una hora.</p><div class="actions"><a class="pill" href="' + esc(data.signedUrl) + '">Descargar PDF</a></div>';
-  } else if (l.kind === "embed") {
-    const src = embedSrc(l.external_url);
-    html += src ? '<div class="frame"><iframe src="' + esc(src) + '" title="' + esc(l.title) + '" allow="fullscreen; picture-in-picture; encrypted-media" allowfullscreen loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe></div>' : '<p class="err">Este vídeo no se puede mostrar.</p>';
-  } else {
-    html += isHttps(l.external_url) ? '<div class="actions"><a class="pill" target="_blank" rel="noopener" href="' + esc(l.external_url) + '">Abrir enlace</a></div>' : "";
-  }
-  stage.innerHTML = html + foot;
-  $("#mark").onclick = () => setDone(l.id, !doneIds.has(l.id), productId, l.id);
-}
-
 /* ------------------------------------------------------------ rutas */
 function route() {
+  unlock.open && unlock.close();
   const h = location.hash.slice(1) || "tienda";
-  $$("[data-nav]").forEach((a) => a.setAttribute("aria-current", h.startsWith(a.dataset.nav) || (a.dataset.nav === "mis-programas" && h.startsWith("programa-")) || (a.dataset.nav === "tienda" && h.startsWith("producto-"))));
+  $$("[data-nav]").forEach((a) => a.setAttribute("aria-current", a.dataset.nav === "mis-programas" ? h === "mis-programas" : h !== "mis-programas"));
+  window.scrollTo(0, 0);
   if (h === "mis-programas") return drawMine();
-  if (h.startsWith("programa-")) return drawProgram(h.slice(9));
-  return drawShop(h.startsWith("producto-") ? h.slice(9) : null);
+  if (h.startsWith("producto-")) return drawProduct(h.slice(9));
+  return drawShop();
 }
 window.addEventListener("hashchange", route);
-(async () => { await refreshSession(); await loadMine(); route(); })();
+(async () => { await refresh(); route(); })();

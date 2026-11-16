@@ -122,3 +122,68 @@ dialog::backdrop{background:rgba(0,0,0,.35);-webkit-backdrop-filter:blur(6px);ba
 .toast{position:fixed;left:50%;bottom:max(24px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--white);padding:12px 18px;border-radius:999px;font-size:.9rem;z-index:99;max-width:calc(100vw - 32px)}
 .toast.bad{background:var(--bad)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* ficha clínica e infografía */
+.sheet{display:flex;flex-direction:column;gap:20px}
+.sheet h2{margin-bottom:10px}
+.sheet ul{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+.sheet .tags{margin-bottom:14px}
+.sech{font-size:1.7rem;letter-spacing:-.025em}
+.phases{list-style:none;margin:14px 0 14px;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.phases>li{background:var(--grey);border-radius:18px;padding:20px;min-width:0;border-top:4px solid var(--accent)}
+.phases>li:nth-child(1){border-top-color:#8FB8E3}.phases>li:nth-child(2){border-top-color:#4A8FD4}
+.phn{font-size:.76rem;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.06em}
+.when{font-weight:600;margin:2px 0 6px}
+@media (max-width:760px){.phases{grid-template-columns:minmax(0,1fr)}}
+.lights{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:6px 0 12px}
+.lights div{display:flex;flex-direction:column;gap:4px;background:var(--grey);border-radius:16px;padding:16px;min-width:0}
+.lights i{width:16px;height:16px;border-radius:50%;display:block}
+.lights .g{background:#2E9B63}.lights .a{background:#D9A521}.lights .r{background:#C94A40}
+.lights span{color:var(--muted);font-size:.9rem}
+@media (max-width:600px){.lights{grid-template-columns:minmax(0,1fr)}}
+.flags{background:var(--bad-bg)}
+.flags h2{color:var(--bad)}
+.exlist{display:flex;flex-direction:column;gap:16px;margin-top:14px}
+.ex{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:24px;align-items:start}
+@media (max-width:760px){.ex{grid-template-columns:minmax(0,1fr)}}
+.exfig{background:var(--grey);border-radius:18px;padding:10px;min-width:0}
+.pose{display:block;width:100%;height:auto}
+.pose .limb{stroke:var(--ink);stroke-width:5;stroke-linecap:round}
+.pose .far{stroke:#A9A9B2;stroke-width:5;stroke-linecap:round}
+.pose .head{fill:var(--ink)}
+.pose .floor,.pose .prop{stroke:var(--hair);stroke-width:2;stroke-linecap:round}
+.pose .propfill{fill:var(--hair)}
+.pose .band{stroke:var(--accent);stroke-width:2.5;stroke-linecap:round;fill:none}
+.pose .weight{fill:var(--accent)}
+.pose .cap{font:500 10px var(--font);fill:var(--muted)}
+.dose{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:14px 0 0}
+.dose div{background:var(--grey);border-radius:12px;padding:10px 12px;min-width:0}
+.dose dt{font-size:.74rem;color:var(--muted)}
+.dose dd{margin:2px 0 0;font-weight:600;font-size:.92rem}
+.check{flex-direction:row;align-items:center;gap:10px;margin-top:14px;color:var(--ink);font-size:.95rem;cursor:pointer}
+.check input{width:20px;height:20px;accent-color:var(--accent)}
+.disclaimer{text-align:center}
+.filters{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px;align-items:flex-end}
+.filters label{flex:1 1 220px}
+.plan{background:var(--ink);color:var(--white);border-radius:var(--r);padding:24px 28px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:24px}
+.plan .muted{color:#A1A1A6}
+.cover.auto{align-items:flex-end;justify-content:flex-start;font-size:1.3rem;font-weight:600;letter-spacing:-.02em;color:var(--ink);padding:18px}
+.choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+@media (max-width:600px){.choices{grid-template-columns:minmax(0,1fr)}}
+.choice{background:var(--grey);border-radius:18px;padding:22px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.choice.best{box-shadow:inset 0 0 0 2px var(--accent)}
+.choice .amt{font-size:1.6rem}
+.exed{background:var(--grey);border-radius:16px;padding:6px 16px}
+.exed summary{cursor:pointer;padding:10px 0;font-weight:600}
+.exed .form{padding:6px 0 14px}
+
+@media print{
+  body{background:#fff}
+  .nav,.noprint,.toast,dialog{display:none!important}
+  main.wrap{padding:0;max-width:none}
+  .panel{padding:14px 0;border-radius:0;break-inside:avoid}
+  .flags{background:none;border:1.5px solid var(--bad);padding:14px;border-radius:10px}
+  .phases>li,.lights div,.dose div,.exfig{border:1px solid var(--hair);background:none}
+  .ex{grid-template-columns:4fr 8fr;break-inside:avoid}
+  h1{font-size:22pt}
+}
