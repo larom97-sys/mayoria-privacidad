@@ -1,7 +1,24 @@
 /* Portal del paciente «Mi rehabilitación»: privado y sin pagos.
    El paciente solo ve los programas que su fisioterapeuta le ha asignado; el servidor no entrega nada más. */
 const view = $("#view");
-let session = null, patientId = null, programs = [], afterLogin = null;
+let session = null, patientId = null, programs = [], afterLogin = null, consented = false;
+const CONSENT_VERSION = "2026-11";
+
+/* Consentimiento informado en el primer acceso: sin aceptarlo no se muestran los programas ni se registran datos. */
+function drawConsent() {
+  view.innerHTML = '<div class="panel authbox stack" style="max-width:560px"><h2>Antes de empezar</h2>' +
+    "<p>Tu clínica usa este portal para enviarte tus ejercicios y seguir tu evolución. Para ello se tratarán estos datos tuyos:</p>" +
+    '<ul style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px"><li>Tu nombre, email y teléfono, tal como los tiene tu clínica.</li><li>Los programas y pautas que te asigne tu fisioterapeuta.</li><li>Lo que tú registres: ejercicios hechos, dolor, esfuerzo, comentarios y mensajes.</li></ul>' +
+    '<p class="muted small">Son datos de salud. Solo los ven los profesionales de tu clínica, que es la responsable de su tratamiento. Puedes pedirle en cualquier momento el acceso, la rectificación o el borrado de tus datos.</p>' +
+    '<label class="check" style="margin:0"><input type="checkbox" id="consent-ok"> He leído lo anterior y consiento el tratamiento de mis datos de salud con este fin.</label>' +
+    '<button class="pill" type="button" id="consent-go" disabled>Continuar</button></div>';
+  $("#consent-ok").onchange = (e) => ($("#consent-go").disabled = !e.target.checked);
+  $("#consent-go").onclick = async () => {
+    const { data, error } = await sb.rpc("accept_consent", { p_version: CONSENT_VERSION });
+    if (error || !data) return toast("No se ha podido guardar tu consentimiento.", true);
+    consented = true; route();
+  };
+}
 const SIGNED_SECONDS = 3600; // las URL firmadas de vídeos y PDF caducan en una hora
 const here = () => location.href.split("#")[0];
 
@@ -13,6 +30,9 @@ async function refresh() {
   const { data: pid } = await sb.rpc("ensure_patient", { p_name: null });
   patientId = pid || null;
   if (!patientId) return;
+  const { data: ctx } = await sb.rpc("portal_context");
+  consented = !!ctx?.consent_at;
+  if (ctx?.clinic_name) $(".brand").innerHTML = "Mi rehabilitación <span class=\"muted\">· " + esc(ctx.clinic_name) + "</span>";
   const { data } = await sb.from("patient_programs").select("*").order("created_at", { ascending: false });
   programs = data || [];
 }
@@ -61,9 +81,13 @@ function drawHome() {
 function route() {
   const h = location.hash.slice(1);
   window.scrollTo(0, 0);
+  if (session && patientId && !consented) return drawConsent();
   if (h.startsWith("plan-")) return drawPlan(h.slice(5));
   return drawHome();
 }
 window.addEventListener("hashchange", () => { drawPlan.tab = null; route(); });
-sb.auth.onAuthStateChange((ev) => { if (ev === "SIGNED_IN" && !session) setTimeout(afterAuth, 0); }); // llegada por enlace de acceso
+// Llegada por enlace de acceso (la URL trae el token): al completarse el inicio de sesión se carga el portal.
+// Solo en ese caso: en una recarga normal no hay que tocar la ruta.
+const cameByLink = /[#?&](access_token|code)=/.test(location.href);
+sb.auth.onAuthStateChange((ev) => { if (cameByLink && ev === "SIGNED_IN" && !session) setTimeout(afterAuth, 0); });
 (async () => { await refresh(); route(); })();

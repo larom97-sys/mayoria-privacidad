@@ -5,6 +5,8 @@ const money = (cents) => (cents / 100).toLocaleString("es-ES", { style: "currenc
 const daysLeft = (iso) => Math.ceil((new Date(iso) - new Date()) / 86400000);
 const isLocal = ["localhost", "127.0.0.1"].includes(location.hostname);
 let yearly = false;
+/* Una característica puede venir marcada como "soon": se muestra, pero avisando de que aún no está disponible. */
+const feat = (f) => "<li>" + (typeof f === "string" ? esc(f) : esc(f.t) + (f.soon ? ' <span class="chip" style="font-size:.68rem;padding:2px 8px">Próximamente</span>' : "")) + "</li>";
 
 function billingStatus(b) {
   if (b.status === "canceled") return { level: "red", label: "Cancelada" };
@@ -47,7 +49,7 @@ function upgradeModal(reason) {
   }[reason];
   upgBody.innerHTML = '<div class="dlghead"><h2>' + esc(text[0]) + '</h2><button class="iconbtn" id="upg-close" aria-label="Cerrar" style="background:var(--grey)">✕</button></div>' +
     '<p class="muted">' + esc(text[1]) + "</p>" +
-    (reason === "blocked" ? "" : '<div class="choice best"><h3>Plan ' + esc(next.name) + '</h3><span class="amt">' + money(next.monthly_cents) + ' <span class="muted small">al mes</span></span><ul class="small muted" style="margin:0;padding-left:18px">' + next.features.map((f) => "<li>" + esc(f) + "</li>").join("") + "</ul></div>") +
+    (reason === "blocked" ? "" : '<div class="choice best"><h3>Plan ' + esc(next.name) + '</h3><span class="amt">' + money(next.monthly_cents) + ' <span class="muted small">al mes + IVA</span></span><ul class="small muted" style="margin:0;padding-left:18px">' + next.features.map(feat).join("") + "</ul></div>") +
     '<div class="dlgfoot"><button class="ghost on-white" type="button" id="upg-later">Ahora no</button><button class="pill" type="button" id="upg-go">Ver planes</button></div>';
   $("#upg-close").onclick = $("#upg-later").onclick = () => upg.close();
   $("#upg-go").onclick = () => { upg.close(); show("ajustes"); };
@@ -74,16 +76,16 @@ async function drawBilling() {
 
     '<div class="panel stack"><div class="pagehead" style="margin:0"><h2>Planes</h2><div class="actions" role="group" aria-label="Periodo de facturación">' +
     '<button class="tab" type="button" id="bill-m" aria-current="' + !yearly + '" style="background:' + (yearly ? "var(--grey)" : "") + '">Mensual</button>' +
-    '<button class="tab" type="button" id="bill-y" aria-current="' + yearly + '" style="background:' + (yearly ? "" : "var(--grey)") + '">Anual · 2 meses gratis</button></div></div>' +
+    '<button class="tab" type="button" id="bill-y" aria-current="' + yearly + '" style="background:' + (yearly ? "" : "var(--grey)") + '">Anual · con descuento</button></div></div>' +
     '<div class="plans">' + b.plans.map((p) => {
       const mine = p.tier === b.plan_tier && b.has_subscription;
-      return '<div class="choice' + (p.popular ? " best" : "") + '">' + (p.popular ? '<span class="chip ok" style="align-self:flex-start">Más popular</span>' : '<span class="chip" style="align-self:flex-start;visibility:hidden">·</span>') +
-        "<h3>" + esc(p.name) + '</h3><span class="amt">' + money(yearly ? p.yearly_cents : p.monthly_cents) + ' <span class="muted small">' + (yearly ? "al año" : "al mes") + "</span></span>" +
-        (yearly ? '<span class="muted small">Equivale a ' + money(Math.round(p.yearly_cents / 12)) + " al mes</span>" : "") +
-        '<ul class="small muted" style="margin:0;padding-left:18px;flex:1">' + p.features.map((f) => "<li>" + esc(f) + "</li>").join("") + "</ul>" +
+      return '<div class="choice' + (p.popular ? " best" : "") + '">' + (p.popular ? '<span class="chip ok" style="align-self:flex-start">Más elegido</span>' : '<span class="chip" style="align-self:flex-start;visibility:hidden">·</span>') +
+        "<h3>" + esc(p.name) + '</h3><span class="amt" data-amount="' + (yearly ? p.yearly_cents : p.monthly_cents) + '">' + money(yearly ? Math.round(p.yearly_cents / 12) : p.monthly_cents) + ' <span class="muted small">al mes + IVA</span></span>' +
+        '<span class="muted small">' + (yearly ? "Un pago de " + money(p.yearly_cents) + " + IVA al año" : "Facturación mensual, sin permanencia") + "</span>" +
+        '<ul class="small muted" style="margin:0;padding-left:18px;flex:1">' + p.features.map(feat).join("") + "</ul>" +
         '<button class="' + (p.popular ? "pill" : "ghost") + '" type="button" data-plan="' + p.tier + '"' + (mine || !b.is_admin ? " disabled" : "") + ">" + (mine ? "Tu plan actual" : b.has_subscription ? "Cambiar a este plan" : "Suscribirme") + "</button></div>";
     }).join("") + "</div>" +
-    '<p class="muted small">Precios sin impuestos. Los pacientes nunca pagan: la cuota es de la clínica.' + (b.is_admin ? "" : " Solo el administrador de la clínica puede cambiar el plan.") + "</p></div>" +
+    '<p class="muted small">Precios sin IVA. Los pacientes nunca pagan: la cuota es de la clínica.' + (b.is_admin ? "" : " Solo el administrador de la clínica puede cambiar el plan.") + "</p></div>" +
 
     '<div class="panel stack"><h2>Equipo</h2><p class="muted small">' + (team || []).length + ((team || []).length === 1 ? " fisioterapeuta" : " fisioterapeutas") + " con acceso. Invita por email: quien entre al panel con esa dirección verificada se une a tu clínica.</p>" +
     ((invites || []).length ? '<div class="rows">' + invites.map((i) => "<div><span>" + esc(i.email) + ' <span class="muted small">· invitación pendiente</span></span><button class="ghost sm on-white" data-uninvite="' + i.id + '">Cancelar</button></div>').join("") + "</div>" : "") +
