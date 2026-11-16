@@ -11,37 +11,21 @@
 <body>
 <header class="nav">
   <div class="wrap">
-    <span class="brand">Gestión de consulta <span class="muted">· Panel</span></span>
+    <span class="brand"><span id="clinic-name">Panel</span> <span class="muted">· Fisioterapia</span></span>
     <nav id="nav" hidden>
       <button class="tab" type="button" data-view="seguimiento">Seguimiento</button>
-      <button class="tab" type="button" data-view="productos" aria-current="true">Infoproductos</button>
       <button class="tab" type="button" data-view="pacientes">Pacientes</button>
-      <a class="tab" href="portal.html" target="_blank" rel="noopener">Ver portal</a>
+      <button class="tab" type="button" data-view="productos">Biblioteca</button>
+      <button class="tab" type="button" data-view="ajustes">Ajustes</button>
       <button class="tab" type="button" id="logout">Salir</button>
     </nav>
   </div>
+  <div id="banner" hidden></div>
 </header>
 
 <main class="wrap">
   <section id="auth"></section>
-
-  <section id="denied" hidden>
-    <div class="panel authbox stack">
-      <h2>Esta cuenta no gestiona la clínica</h2>
-      <p class="muted">El panel ya tiene una cuenta administradora. Si eres paciente, tus programas están en el portal.</p>
-      <a class="pill" href="portal.html">Ir al portal</a>
-    </div>
-  </section>
-
-  <section id="v-productos" hidden>
-    <div class="pagehead">
-      <h1>Infoproductos</h1>
-      <button class="pill" type="button" id="new-product">Nuevo infoproducto</button>
-    </div>
-    <div class="stats" id="stats"></div>
-    <div id="plan"></div>
-    <div class="grid" id="grid"></div>
-  </section>
+  <section id="onboard" hidden></section>
 
   <section id="v-seguimiento" hidden>
     <div class="pagehead"><h1>Seguimiento</h1></div>
@@ -59,17 +43,33 @@
       <div class="panel" id="patient-card"></div>
     </div>
   </section>
+
+  <section id="v-productos" hidden>
+    <div class="pagehead">
+      <div><h1>Biblioteca clínica</h1><p class="muted">Plantillas internas de la clínica. Los pacientes solo ven lo que se les asigna.</p></div>
+      <button class="pill" type="button" id="new-product">Nuevo programa</button>
+    </div>
+    <div class="filters" id="lib-filters"></div>
+    <p class="muted small" id="lib-count" style="margin-bottom:14px"></p>
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <section id="v-ajustes" hidden>
+    <div class="pagehead"><h1>Ajustes y facturación</h1></div>
+    <div class="stack" id="billing"></div>
+  </section>
 </main>
 
 <dialog id="rx" aria-label="Prescripción y evolución"><div class="dlg" id="rx-body"></div></dialog>
-<dialog id="editor" aria-label="Editor de infoproducto"><div class="dlg" id="editor-body"></div></dialog>
+<dialog id="editor" aria-label="Editor de programa"><div class="dlg" id="editor-body"></div></dialog>
+<dialog id="upgrade" aria-label="Mejorar plan"><div class="dlg" id="upgrade-body"></div></dialog>
 
 <script src="vendor/supabase.js"></script>
 <script src="config.js"></script>
 <script src="common.js"></script>
 <script src="clinical.js"></script>
-<script src="seed-data.js"></script>
 <script src="admin.js"></script>
 <script src="tracking.js"></script>
+<script src="billing.js"></script>
 </body>
 </html>

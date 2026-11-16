@@ -158,27 +158,6 @@ section{padding-block:128px}
 .spec dd{margin:0;font-size:.95rem}
 @media (max-width:760px){.spec{grid-template-columns:minmax(0,1fr)}.spec div{grid-template-columns:minmax(0,1fr);gap:4px}}
 
-/* tienda */
-.filters{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:-24px 0 44px}
-.filters button{appearance:none;border:0;border-radius:999px;background:var(--white);color:var(--ink);font:500 .9rem/1 var(--font);padding:11px 18px;cursor:pointer;transition:background .4s var(--ease),color .4s var(--ease)}
-.filters button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
-.shop{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
-@media (max-width:900px){.shop{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media (max-width:600px){.shop{grid-template-columns:minmax(0,1fr)}}
-.prod{background:var(--white);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column;min-width:0;transition:transform .6s var(--ease)}
-.prod:hover{transform:scale(1.015)}
-.cover{aspect-ratio:16/10;max-width:100%;background:var(--hair-soft);display:flex;flex-direction:column;justify-content:space-between;padding:20px 22px;color:var(--muted);font-size:.82rem}
-.cover b{font-size:2.2rem;line-height:1;font-weight:600;letter-spacing:-.04em;color:var(--ink)}
-.cover .eg{align-self:flex-start;background:var(--white);border-radius:999px;padding:5px 11px;font-size:.74rem}
-.prod .body{padding:24px 24px 26px;display:flex;flex-direction:column;gap:10px;flex:1}
-.prod .cat{font-size:.8rem;color:var(--muted)}
-.prod p{color:var(--muted);font-size:.95rem}
-.prod .row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:auto;padding-top:16px}
-.prod .amt{font-size:1.25rem;font-weight:600;letter-spacing:-.02em}
-.prod .pill{padding:11px 18px;font-size:.9rem}
-.prod .pending{font-size:.82rem;color:var(--muted);border:1px dashed var(--hair);border-radius:999px;padding:9px 14px}
-.shopnote{text-align:center;font-size:.86rem;color:var(--muted);margin-top:36px}
-
 /* dudas */
 .faq{max-width:760px;margin:0 auto}
 details{border-bottom:1px solid var(--hair)}
@@ -200,7 +179,6 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:8px 28px;justify-content:space-betw
       <a class="l" href="#claves">Claves</a>
       <a class="l" href="#para-quien">Para quién</a>
       <a class="l" href="#ficha">Ficha</a>
-      <a class="l" href="#tienda">Tienda</a>
       <a class="l" href="#dudas">Dudas</a>
       <a class="pill" href="#ficha">Conseguir</a>
     </nav>
@@ -393,19 +371,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:8px 28px;justify-content:space-betw
   </div>
 </section>
 
-<section class="grey" id="tienda">
-  <div class="wrap">
-    <div class="head">
-      <h2>Programas y guías.</h2>
-      <p class="sub">Ejercicios en vídeo, guías en PDF y cursos para seguir el tratamiento en casa.</p>
-    </div>
-    <div class="filters" id="filters" role="group" aria-label="Filtrar por categoría"></div>
-    <div class="shop" id="shop"></div>
-    <p class="shopnote">El pago se realiza en una página externa segura. Estos programas no sustituyen a la valoración de tu fisioterapeuta.</p>
-  </div>
-</section>
-
-<section id="dudas">
+<section class="grey" id="dudas">
   <div class="wrap">
     <div class="head"><h2>Preguntas frecuentes</h2></div>
     <div class="faq">
@@ -430,17 +396,6 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:8px 28px;justify-content:space-betw
 var PRECIO = "";            // p. ej. "29 €"
 var EMAIL  = "";            // p. ej. "hola@tudominio.es"
 
-/* Tienda de infoproductos. Son EJEMPLOS: sustituye cada uno por tus productos reales.
-   precio: 0 = gratuito. enlace: URL de pago o descarga externa (Stripe Payment Link, Gumroad, etc.).
-   Pon ejemplo:false cuando el producto sea real, y desaparece la etiqueta "Ejemplo". */
-var PRODUCTOS = [
-  {titulo:"Programa de suelo pélvico", categoria:"Suelo pélvico", tipo:"Vídeo", detalle:"8 lecciones", precio:39, descripcion:"Ejercicios guiados en vídeo, de menos a más, para hacer en casa.", enlace:"", ejemplo:true},
-  {titulo:"Guía de higiene lumbar", categoria:"Lumbalgia", tipo:"PDF", detalle:"Guía descargable", precio:0, descripcion:"Pautas posturales y de movimiento para el día a día.", enlace:"", ejemplo:true},
-  {titulo:"Vuelta a correr tras una lesión", categoria:"Readaptación deportiva", tipo:"Curso", detalle:"12 lecciones", precio:59, descripcion:"Progresión por fases para retomar la carrera con criterio.", enlace:"", ejemplo:true},
-  {titulo:"Sesiones grabadas de espalda", categoria:"Lumbalgia", tipo:"Pack", detalle:"5 sesiones", precio:29, descripcion:"Clases completas grabadas para repetir cuando quieras.", enlace:"", ejemplo:true},
-  {titulo:"Prevención de lesiones para corredores", categoria:"Readaptación deportiva", tipo:"Curso", detalle:"6 lecciones", precio:49, descripcion:"Fuerza, movilidad y carga de entrenamiento, explicado paso a paso.", enlace:"", ejemplo:true},
-  {titulo:"Rutina diaria de suelo pélvico", categoria:"Suelo pélvico", tipo:"PDF", detalle:"Guía descargable", precio:0, descripcion:"Una rutina breve para mantener lo trabajado en consulta.", enlace:"", ejemplo:true}
-];
 
 (function(){
   var $=function(id){return document.getElementById(id)};
@@ -505,21 +460,6 @@ var PRODUCTOS = [
       tabs.forEach(function(o){var on=o===t;o.setAttribute('aria-selected',on);$(o.getAttribute('aria-controls')).hidden=!on;});
     })});
   });
-
-  var esc=function(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
-  var cats=['Todos'];PRODUCTOS.forEach(function(p){if(cats.indexOf(p.categoria)<0)cats.push(p.categoria)});
-  var actual='Todos';
-  function tienda(){
-    $('filters').innerHTML=cats.map(function(c,i){return '<button type="button" id="filtro-'+i+'" aria-pressed="'+(c===actual)+'">'+esc(c)+'</button>'}).join('');
-    $('shop').innerHTML=PRODUCTOS.filter(function(p){return actual==='Todos'||p.categoria===actual}).map(function(p){
-      var gratis=!p.precio, ok=/^https:\/\//.test(p.enlace||'');
-      var cta=ok?'<a class="pill" href="'+esc(p.enlace)+'" target="_blank" rel="noopener">'+(gratis?'Descargar':'Comprar')+'</a>':'<span class="pending">Enlace pendiente</span>';
-      return '<article class="prod"><div class="cover">'+(p.ejemplo?'<span class="eg">Ejemplo</span>':'<span></span>')+'<div><b>'+esc(p.tipo)+'</b><br>'+esc(p.detalle)+'</div></div>'+
-        '<div class="body"><span class="cat">'+esc(p.categoria)+'</span><h3>'+esc(p.titulo)+'</h3><p>'+esc(p.descripcion)+'</p>'+
-        '<div class="row"><span class="amt">'+(gratis?'Gratis':p.precio+' €')+'</span>'+cta+'</div></div></article>'}).join('');
-  }
-  $('filters').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;actual=b.textContent;tienda();});
-  tienda();
 
   $('copy').addEventListener('click',function(){
     var out=$('email'),b=this;
