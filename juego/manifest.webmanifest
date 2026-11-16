@@ -1,0 +1,7 @@
+{
+  "name": "Mayoría", "short_name": "Mayoría", "lang": "es",
+  "description": "Sátira política por turnos: planifica cada semana y convence al país.",
+  "start_url": "index.html", "scope": "./", "display": "standalone", "orientation": "portrait",
+  "background_color": "#24160C", "theme_color": "#24160C", "categories": ["games", "strategy"],
+  "icons": [{ "src": "icono.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

@@ -1,0 +1,17 @@
+{
+  "name": "Mayoría",
+  "short_name": "Mayoría",
+  "description": "Campaña política por turnos. Diez regiones, pocas acciones por semana, 51 escaños.",
+  "lang": "es",
+  "start_url": "mayoria.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#120A05",
+  "theme_color": "#120A05",
+  "categories": ["games", "strategy"],
+  "icons": [
+    { "src": "icono.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icono.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
