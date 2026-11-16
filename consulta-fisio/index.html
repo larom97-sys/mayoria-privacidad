@@ -102,6 +102,11 @@ section{padding-block:120px}
 @media (max-width:760px){section{padding-block:80px}.head{margin-bottom:40px}}
 .three{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
 @media (max-width:860px){.three{grid-template-columns:minmax(0,1fr)}}
+.four{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px}
+@media (max-width:1000px){.four{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.four{grid-template-columns:minmax(0,1fr)}}
+.four .card{padding:28px}
+.four .card p{font-size:.95rem}
 .card{background:var(--grey);border-radius:var(--r);padding:34px;min-width:0;display:flex;flex-direction:column;gap:12px;transition:transform .6s var(--ease)}
 .card:hover{transform:scale(1.015)}
 .grey .card{background:var(--white)}
@@ -159,6 +164,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:8px 28px;justify-content:space-betw
       <a class="l" href="#complemento">Qué es</a>
       <a class="l" href="#evidencia">Evidencia</a>
       <a class="l" href="#precios">Precios</a>
+      <a class="l" href="#datos">Tus datos</a>
       <a class="l" href="#dudas">Dudas</a>
       <a class="l" data-app="admin.html" href="#">Entrar</a>
       <a class="pill" data-app="admin.html" href="#">Probar gratis</a>
@@ -266,7 +272,22 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:8px 28px;justify-content:space-betw
   </div>
 </section>
 
-<section id="dudas">
+<section id="datos">
+  <div class="wrap">
+    <div class="head">
+      <h2>Tus datos son tuyos.</h2>
+      <p class="sub">Lo que la plataforma hace hoy con los datos de tu clínica y de tus pacientes, sin letra pequeña.</p>
+    </div>
+    <div class="four">
+      <article class="card"><h3>Servidores en la Unión Europea</h3><p>La base de datos y los archivos se alojan en la UE (Irlanda). Cada clínica solo puede ver a sus propios pacientes.</p></article>
+      <article class="card"><h3>PDF cifrados con DNI/NIE</h3><p>Los informes y rutinas en PDF se pueden proteger con el DNI/NIE del paciente antes de enviarlos. El cifrado se hace en tu navegador.</p></article>
+      <article class="card"><h3>Puerta de salida abierta</h3><p>Sin permanencia en el plan mensual. Exporta pacientes, programas, registros y mensajes en CSV con un clic, también si cancelas.</p></article>
+      <article class="card"><h3>Consentimiento y registro</h3><p>El paciente da su consentimiento informado en el primer acceso, y cada ficha guarda un registro de quién cambió qué y cuándo.</p><p><span class="chip">Próximamente</span> Firma digital del contrato de encargado del tratamiento (art. 28 RGPD).</p></article>
+    </div>
+  </div>
+</section>
+
+<section class="grey" id="dudas">
   <div class="wrap">
     <div class="head"><h2>Preguntas frecuentes</h2></div>
     <div class="faq">
@@ -278,7 +299,7 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:8px 28px;justify-content:space-betw
   </div>
 </section>
 
-<section class="grey" style="padding-block:96px">
+<section style="padding-block:96px">
   <div class="wrap final">
     <h2>Pruébalo con tu próximo paciente.</h2>
     <a class="pill" data-app="admin.html" href="#">Probar gratis 14 días (sin tarjeta)</a>
