@@ -117,3 +117,78 @@ function coverBlock(p, inner) {
     ? '<div class="cover"' + coverStyle(p.cover_path) + ">" + (inner || "") + "</div>"
     : '<div class="cover auto" style="flex-direction:column;align-items:flex-start;justify-content:space-between">' + (inner || "<span></span>") + "<span>" + esc(p.body_region || "Programa") + "</span></div>";
 }
+
+/* ------------------------------------------------------------ seguimiento: fechas, adherencia, alertas y gráficas */
+const WEEKDAYS = ["L", "M", "X", "J", "V", "S", "D"];
+const ACCESS_LABEL = { free_consult: "Gratuito de consulta", one_time: "Pago único", subscription: "Con suscripción" };
+const PROGRAM_STATUS = { active: "Activo", paused: "Pausado", completed: "Completado" };
+const localISO = (d) => { d = d || new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
+const addDays = (s, n) => { const d = new Date(s + "T12:00:00"); d.setDate(d.getDate() + n); return localISO(d); };
+const isoDow = (s) => new Date(s + "T12:00:00").getDay() || 7;
+const dayDiff = (a, b) => Math.round((new Date(a + "T12:00:00") - new Date(b + "T12:00:00")) / 86400000);
+const shortDate = (s) => new Date(s + "T12:00:00").toLocaleDateString("es-ES", { day: "numeric", month: "short" });
+function plannedDays(prog, from, to) {
+  const out = [];
+  for (let d = from < prog.start_date ? prog.start_date : from; d <= to; d = addDays(d, 1)) if (prog.weekdays.includes(isoDow(d))) out.push(d);
+  return out;
+}
+const adherence = (prog, logs, from, to) => {
+  const planned = plannedDays(prog, from, to).length;
+  if (!planned) return null;
+  const done = new Set(logs.filter((l) => l.completed && l.log_date >= from && l.log_date <= to).map((l) => l.log_date)).size;
+  return Math.min(100, Math.round((done / planned) * 100));
+};
+
+/* Indicadores de un programa. Alerta roja: dolor EVA >= 6 en las últimas 48 h. Ámbar: más de 5 días sin actividad. */
+function programStats(prog, logs) {
+  const today = localISO(), last = logs.reduce((m, l) => (l.log_date > m ? l.log_date : m), "");
+  const inactive = dayDiff(today, last || prog.start_date);
+  const recent = logs.filter((l) => l.pain_eva != null && l.log_date >= addDays(today, -1));
+  const pain48 = recent.length ? Math.max(...recent.map((l) => l.pain_eva)) : null;
+  const level = pain48 != null && pain48 >= 6 ? "red" : inactive > 5 ? "amber" : "green";
+  return { adherence: adherence(prog, logs, addDays(today, -6), today), last, inactive, pain48, level,
+    label: level === "red" ? "Dolor alto" : level === "amber" ? "Inactivo" : "En curso" };
+}
+const levelChip = (level, label) => '<span class="sem ' + level + '"><i aria-hidden="true"></i>' + esc(label) + "</span>";
+const pctLevel = (p) => (p == null ? "none" : p >= 80 ? "green" : p >= 50 ? "amber" : "red");
+
+/* Cumplimiento por semanas (bloques de 7 días desde el inicio del programa). */
+function weeklyAdherence(prog, logs) {
+  const today = localISO(), out = [];
+  for (let from = prog.start_date; from <= today; from = addDays(from, 7)) {
+    const to = addDays(from, 6) > today ? today : addDays(from, 6), v = adherence(prog, logs, from, to);
+    if (v != null) out.push({ x: shortDate(from), y: v, tip: "Semana del " + shortDate(from) + ": " + v + " % de las sesiones previstas" });
+  }
+  return out;
+}
+
+/* Gráfica de línea de una sola serie. points: [{x, y, tip}]. Un eje, rejilla discreta, última cifra rotulada. */
+function lineChart(points, o) {
+  const W = 640, H = 220, L = 48, R = 48, T = 24, B = 30, max = o.max, iw = W - L - R, ih = H - T - B;
+  if (!points.length) return '<p class="muted small">' + esc(o.empty || "Todavía no hay datos.") + "</p>";
+  const px = (i) => L + (points.length === 1 ? iw / 2 : (i / (points.length - 1)) * iw), py = (v) => T + ih - (v / max) * ih;
+  const ticks = o.ticks || [0, max / 2, max], every = Math.max(1, Math.ceil(points.length / 6));
+  let s = '<div class="chart"><svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="' + esc(o.title) + '">';
+  ticks.forEach((t) => { s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + py(t) + '" y2="' + py(t) + '" class="grid"/><text x="' + (L - 6) + '" y="' + (py(t) + 4) + '" text-anchor="end" class="axis">' + t + (o.unit || "") + "</text>"; });
+  if (o.threshold != null) s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + py(o.threshold) + '" y2="' + py(o.threshold) + '" class="thr"/><text x="' + (W - R + 4) + '" y="' + (py(o.threshold) + 4) + '" class="axis">' + esc(o.thresholdLabel || "") + "</text>";
+  s += '<polyline fill="none" class="line" points="' + points.map((p, i) => px(i) + "," + py(p.y)).join(" ") + '"/>';
+  points.forEach((p, i) => {
+    s += '<circle cx="' + px(i) + '" cy="' + py(p.y) + '" r="4.5" class="dot"/>';
+    if (i % every === 0 || i === points.length - 1) s += '<text x="' + px(i) + '" y="' + (H - 8) + '" text-anchor="middle" class="axis">' + esc(p.x) + "</text>";
+    s += '<circle cx="' + px(i) + '" cy="' + py(p.y) + '" r="14" class="hit" tabindex="0" data-tip="' + esc(p.tip) + '"><title>' + esc(p.tip) + "</title></circle>";
+  });
+  const lastP = points[points.length - 1];
+  s += '<text x="' + (px(points.length - 1) + 9) + '" y="' + (py(lastP.y) - 8) + '" class="val">' + lastP.y + (o.unit || "") + "</text>";
+  return s + '</svg><div class="tip" hidden></div></div>';
+}
+/* Capa de hover: muestra el dato del punto bajo el cursor o con foco. */
+function wireCharts(root) {
+  $$(".chart", root).forEach((c) => {
+    const tip = $(".tip", c);
+    const show = (e) => { const t = e.target.closest(".hit"); if (!t) return; const r = t.getBoundingClientRect(), b = c.getBoundingClientRect(); tip.textContent = t.dataset.tip; tip.hidden = false; tip.style.left = Math.min(Math.max(r.left + r.width / 2 - b.left, 70), b.width - 70) + "px"; tip.style.top = (r.top - b.top - 6) + "px"; };
+    c.addEventListener("mouseover", show); c.addEventListener("focusin", show);
+    c.addEventListener("mouseleave", () => (tip.hidden = true)); c.addEventListener("focusout", () => (tip.hidden = true));
+  });
+}
+const restSeconds = (s) => { const m = /(\d+)\s*min/.exec(s || ""), x = /(\d+)\s*s\b/.exec(s || ""); return m ? Number(m[1]) * 60 : x ? Number(x[1]) : 60; };
+const chatHtml = (msgs, me) => msgs.length ? msgs.map((m) => '<div class="msg ' + (m.sender === me ? "mine" : "") + '"><p>' + esc(m.body) + '</p><span class="small muted">' + (m.sender === "therapist" ? "Fisio" : "Paciente") + " · " + new Date(m.created_at).toLocaleString("es-ES", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) + "</span></div>").join("") : '<p class="muted small">Todavía no hay mensajes.</p>';

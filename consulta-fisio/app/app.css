@@ -187,3 +187,52 @@ dialog::backdrop{background:rgba(0,0,0,.35);-webkit-backdrop-filter:blur(6px);ba
   .ex{grid-template-columns:4fr 8fr;break-inside:avoid}
   h1{font-size:22pt}
 }
+
+/* seguimiento */
+.sem{display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:5px 11px;font:500 .78rem/1.2 var(--font);background:var(--off-bg);color:var(--off);white-space:nowrap}
+.sem i{width:9px;height:9px;border-radius:50%;background:currentColor;flex:none}
+.sem.green{background:var(--ok-bg);color:var(--ok)}.sem.amber{background:var(--warn-bg);color:var(--warn)}.sem.red{background:var(--bad-bg);color:var(--bad)}
+.tablewrap{overflow-x:auto}
+table.track{border-collapse:collapse;width:100%;min-width:720px;font-size:.92rem}
+table.track th{text-align:left;font-weight:500;color:var(--muted);font-size:.8rem;padding:10px 12px;border-bottom:1px solid var(--hair-soft);white-space:nowrap}
+table.track td{padding:14px 12px;border-bottom:1px solid var(--hair-soft);vertical-align:middle}
+.chart{position:relative}
+.chart svg{display:block;width:100%;height:auto}
+.chart .grid{stroke:var(--hair-soft);stroke-width:1}
+.chart .axis{font:11px var(--font);fill:var(--muted)}
+.chart .val{font:600 12px var(--font);fill:var(--ink)}
+.chart .line{stroke:var(--accent);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.chart .dot{fill:var(--accent);stroke:var(--white);stroke-width:2}
+.chart .thr{stroke:var(--bad);stroke-width:1;stroke-dasharray:4 4}
+.chart .hit{fill:transparent;cursor:pointer;outline:none}
+.chart .hit:focus-visible{stroke:var(--accent);stroke-width:2}
+.chart .tip{position:absolute;transform:translate(-50%,-100%);background:var(--ink);color:var(--white);font-size:.78rem;padding:6px 10px;border-radius:8px;pointer-events:none;max-width:240px;text-align:center}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.kpis div{background:var(--grey);border-radius:14px;padding:12px 14px;min-width:0}
+.kpis b{display:block;font-size:1.25rem;letter-spacing:-.02em}
+@media (max-width:600px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.chat{display:flex;flex-direction:column;gap:8px;max-height:320px;overflow-y:auto;padding:4px}
+.msg{align-self:flex-start;max-width:85%;background:var(--grey);border-radius:16px 16px 16px 4px;padding:10px 14px}
+.msg.mine{align-self:flex-end;background:#E3EEFA;border-radius:16px 16px 4px 16px}
+.msg p{overflow-wrap:anywhere;white-space:pre-wrap}
+.chatform{display:flex;gap:8px;align-items:flex-end}
+.chatform textarea{min-height:48px;flex:1}
+.rxrow{display:grid;grid-template-columns:auto minmax(0,2.2fr) repeat(4,minmax(0,1fr));gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--hair-soft)}
+.rxrow input[type=text]{padding:8px 10px;font-size:.88rem;border-radius:10px}
+.rxrow .ins{grid-column:2/-1}
+@media (max-width:640px){.rxrow{grid-template-columns:auto repeat(2,minmax(0,1fr))}.rxrow .nm,.rxrow .ins{grid-column:2/-1}}
+.days{display:flex;gap:6px;flex-wrap:wrap}
+.days label{flex-direction:row;align-items:center;justify-content:center;width:42px;height:42px;border-radius:50%;background:var(--grey);color:var(--ink);cursor:pointer;font-weight:600}
+.days input{position:absolute;opacity:0;pointer-events:none}
+.days label:has(input:checked){background:var(--accent);color:var(--on-accent)}
+.days label:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+.slider{display:flex;flex-direction:column;gap:6px}
+.slider .top{display:flex;justify-content:space-between;align-items:baseline;color:var(--ink);font-size:1rem}
+.slider output{font-size:1.6rem;font-weight:600;letter-spacing:-.03em}
+.slider input[type=range]{width:100%;height:32px;accent-color:var(--accent)}
+.slider .ends{display:flex;justify-content:space-between;font-size:.78rem;color:var(--muted);font-weight:400}
+.planex{display:flex;flex-direction:column;gap:14px}
+.planex.done{opacity:.6}
+.note{background:#E3EEFA;border-radius:16px;padding:14px 16px}
+.sticky-cta{position:sticky;bottom:max(12px,env(safe-area-inset-bottom,0px));display:flex;justify-content:center;margin-top:20px;z-index:5}
+.sticky-cta .pill{box-shadow:0 10px 30px -10px rgba(0,60,130,.6);padding:16px 28px}

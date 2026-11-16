@@ -9,7 +9,7 @@ const sheetOf = (p) => (Array.isArray(p.product_content) ? p.product_content[0] 
 /* ------------------------------------------------------------ arranque y sesión */
 async function boot() {
   const { data: { session } } = await sb.auth.getSession();
-  ["v-productos", "v-pacientes", "denied"].forEach((id) => ($("#" + id).hidden = true));
+  ["v-productos", "v-pacientes", "v-seguimiento", "denied"].forEach((id) => ($("#" + id).hidden = true));
   $("#nav").hidden = true;
   if (!session) {
     $("#auth").hidden = false;
@@ -24,10 +24,10 @@ async function boot() {
   show("productos");
 }
 function show(view) {
-  $("#v-productos").hidden = view !== "productos";
-  $("#v-pacientes").hidden = view !== "pacientes";
+  ["productos", "pacientes", "seguimiento"].forEach((v) => ($("#v-" + v).hidden = view !== v));
   $$("#nav [data-view]").forEach((b) => b.setAttribute("aria-current", b.dataset.view === view));
   if (view === "pacientes") loadPatients();
+  if (view === "seguimiento") loadTracking();
 }
 $$("#nav [data-view]").forEach((b) => (b.onclick = () => show(b.dataset.view)));
 $("#logout").onclick = async () => { await sb.auth.signOut(); boot(); };
@@ -457,6 +457,7 @@ async function drawPatientCard() {
     $("#pt-action").innerHTML = '<div class="form panel" style="background:var(--grey)"><h3>Enviar enlace de compra</h3><label>Infoproducto<select id="sh-product">' + shareable.map((x) => '<option value="' + x.id + '">' + esc(x.title) + " · " + euros(x.price_cents) + '</option>').join("") + '</select></label><div class="actions" id="sh-links"></div></div>';
     $("#sh-product").onchange = draw; draw();
   };
+  drawPatientPrograms(p, host);
   $$("[data-revoke]", host).forEach((b) => (b.onclick = async () => {
     if (b.dataset.armed !== "1") { b.dataset.armed = "1"; b.textContent = "¿Seguro? Retirar"; return; }
     try { await must(sb.from("accesses").delete().eq("id", b.dataset.revoke)); loadPatients(); } catch (err) { toast(err.message, true); }

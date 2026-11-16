@@ -186,8 +186,11 @@ async function checkout(kind, productId, btn, backTo) {
 function route() {
   unlock.open && unlock.close();
   const h = location.hash.slice(1) || "tienda";
-  $$("[data-nav]").forEach((a) => a.setAttribute("aria-current", a.dataset.nav === "mis-programas" ? h === "mis-programas" : h !== "mis-programas"));
+  const isPlan = h === "mi-plan" || h.startsWith("plan-");
+  const cur = isPlan ? "mi-plan" : h === "mis-programas" ? "mis-programas" : "tienda";
+  $$("[data-nav]").forEach((a) => a.setAttribute("aria-current", a.dataset.nav === cur));
   window.scrollTo(0, 0);
+  if (isPlan) { drawPlan.tab = "ejercicios"; return drawPlan(h.startsWith("plan-") ? h.slice(5) : null); }
   if (h === "mis-programas") return drawMine();
   if (h.startsWith("producto-")) return drawProduct(h.slice(9));
   return drawShop();
