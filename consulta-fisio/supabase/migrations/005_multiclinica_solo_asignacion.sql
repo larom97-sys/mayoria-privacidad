@@ -12,9 +12,10 @@ create table public.clinic_invites (
   id uuid primary key default gen_random_uuid(),
   clinic_id uuid not null references public.clinics on delete cascade,
   email text not null,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  accepted_at timestamptz
 );
-create unique index clinic_invites_email_key on public.clinic_invites (lower(email));
+create unique index clinic_invites_email_key on public.clinic_invites (lower(email)) where accepted_at is null;
 create index clinic_invites_clinic_idx on public.clinic_invites (clinic_id);
 
 alter table public.staff add column clinic_id uuid references public.clinics on delete cascade,
@@ -170,11 +171,11 @@ begin
   if private.my_clinic() is not null then return true; end if;
   select email, email_confirmed_at is not null into em, conf from auth.users where id = uid;
   if em like '%@test.invalid' or not conf then return false; end if;
-  select clinic_id into cid from public.clinic_invites where lower(email) = lower(em);
+  select clinic_id into cid from public.clinic_invites where lower(email) = lower(em) and accepted_at is null;
   if cid is null then return false; end if;
   insert into public.staff (user_id, clinic_id, role) values (uid, cid, 'therapist')
     on conflict (user_id) do update set clinic_id = excluded.clinic_id, role = 'therapist';
-  delete from public.clinic_invites where lower(email) = lower(em);
+  update public.clinic_invites set accepted_at = now() where lower(email) = lower(em) and accepted_at is null;
   return true;
 end $$;
 

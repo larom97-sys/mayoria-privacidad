@@ -1,4 +1,5 @@
-// Abre el portal de facturación de Stripe para que el paciente cancele o cambie su suscripción.
+// Abre el portal de cliente de Stripe para que la clínica cambie de plan, actualice la tarjeta,
+// cancele o descargue sus facturas. Solo el administrador de la clínica.
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 
 const cors = {
@@ -27,16 +28,15 @@ Deno.serve(async (req: Request) => {
   if (!allowedOrigin || returnUrl.origin !== new URL(allowedOrigin).origin) return json({ error: "bad_return_url" }, 400);
 
   const admin = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-  const { data: patient } = await admin.from("patients").select("id").eq("user_id", user.id).maybeSingle();
-  const { data: sub } = patient
-    ? await admin.from("subscriptions").select("stripe_customer_id").eq("patient_id", patient.id).maybeSingle()
-    : { data: null };
-  if (!sub?.stripe_customer_id) return json({ error: "no_subscription" }, 404);
+  const { data: staff } = await admin.from("staff").select("clinic_id,role").eq("user_id", user.id).maybeSingle();
+  if (!staff || staff.role !== "admin") return json({ error: "only_clinic_admin" }, 403);
+  const { data: clinic } = await admin.from("clinics").select("stripe_customer_id").eq("id", staff.clinic_id).single();
+  if (!clinic.stripe_customer_id) return json({ error: "no_subscription" }, 404);
 
   const res = await fetch("https://api.stripe.com/v1/billing_portal/sessions", {
     method: "POST",
     headers: { Authorization: `Bearer ${stripeKey}`, "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ customer: sub.stripe_customer_id, return_url: returnUrl.href }),
+    body: new URLSearchParams({ customer: clinic.stripe_customer_id, return_url: returnUrl.href }),
   });
   const session = await res.json();
   if (!res.ok) return json({ error: "stripe_error", detail: session?.error?.message }, 502);

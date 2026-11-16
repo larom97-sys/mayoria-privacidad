@@ -40,10 +40,10 @@ async function drawPatientPrograms(p, host) {
   if (currentPatient !== p) return;
   const box = document.createElement("div");
   box.className = "stack";
-  box.innerHTML = '<div class="pagehead" style="margin:0"><h3>Planes de ejercicio</h3><button class="pill sm" id="pt-rx">Prescribir programa</button></div>' +
+  box.innerHTML = '<div class="pagehead" style="margin:0"><h3>Programas asignados</h3><button class="pill sm" id="pt-rx">Asignar programa</button></div>' +
     (programs.length ? '<div class="rows">' + programs.map((g) => {
       const s = programStats(g, g.exercise_logs);
-      return "<div><span><b>" + esc(g.title) + '</b><br><span class="muted small">' + ACCESS_LABEL[g.access_type] + " · desde " + shortDate(g.start_date) + " · " + g.weekdays.map((d) => WEEKDAYS[d - 1]).join(" ") + "</span></span>" +
+      return "<div><span><b>" + esc(g.title) + '</b><br><span class="muted small">Desde ' + shortDate(g.start_date) + " · " + g.weekdays.map((d) => WEEKDAYS[d - 1]).join(" ") + "</span></span>" +
         '<span class="actions">' + (g.status === "active" ? levelChip(s.level, s.label) : '<span class="chip">' + PROGRAM_STATUS[g.status] + "</span>") +
         '<button class="ghost sm on-white" data-evo="' + g.id + '">Evolución y chat</button></span></div>';
     }).join("") + "</div>" : '<p class="muted">Sin planes prescritos.</p>');
@@ -54,11 +54,12 @@ async function drawPatientPrograms(p, host) {
 
 /* ------------------------------------------------------------ asignador rápido */
 function openPrescribe(patient) {
-  const templates = products.filter((x) => x.status !== "archived" && (x.sheet.exercises || []).length);
-  if (!templates.length) return toast("No hay plantillas con ejercicios. Crea una en Infoproductos.", true);
+  if (!guardWrite()) return;
+  if (bill && bill.max_active_patients != null && bill.active_patients >= bill.max_active_patients && !(patient.patient_programs || []).some((g) => g.status === "active")) return upgradeModal("patients");
+  const templates = products.filter((x) => (x.is_master || x.status === "published") && hasContent(x));
+  if (!templates.length) return toast("No hay programas disponibles en la biblioteca.", true);
   rxBody.innerHTML = rxHead("Prescribir a " + patient.full_name) + '<form class="form" id="rx-form">' +
-    '<div class="two"><label>Plantilla<select id="rx-tpl">' + templates.map((t) => '<option value="' + t.id + '">' + esc(t.title) + "</option>").join("") + "</select></label>" +
-    '<label>Tipo de acceso<select id="rx-access"><option value="free_consult">Gratuito, incluido en consulta</option><option value="one_time">De pago: compra individual</option><option value="subscription">De pago: con suscripción</option></select></label></div>' +
+    '<label>Programa de la biblioteca<select id="rx-tpl">' + templates.map((t) => '<option value="' + t.id + '">' + esc(t.title) + (t.is_master ? " · maestra" : "") + "</option>").join("") + "</select></label>" +
     '<div class="two"><label>Fecha de inicio<input type="date" id="rx-start" required value="' + localISO() + '"></label>' +
     '<div><span class="small muted" style="font-weight:500">Días recomendados</span><div class="days" style="margin-top:6px">' + WEEKDAYS.map((d, i) => "<label>" + d + '<input type="checkbox" id="rx-day-' + (i + 1) + '" value="' + (i + 1) + '"' + ([1, 3, 5].includes(i + 1) ? " checked" : "") + "></label>").join("") + "</div></div></div>" +
     '<label>Notas clínicas para el paciente<textarea id="rx-notes" maxlength="1500" placeholder="Pautas generales, precauciones, objetivo de estas semanas…"></textarea></label>' +
@@ -67,6 +68,7 @@ function openPrescribe(patient) {
   wireClose();
   const drawEx = () => {
     const t = templates.find((x) => x.id === $("#rx-tpl").value);
+    if (!(t.sheet.exercises || []).length) { $("#rx-ex").innerHTML = '<p class="muted small">Este programa no tiene ejercicios: el paciente verá solo la infografía y los archivos.</p>'; return; }
     $("#rx-ex").innerHTML = '<div class="rxrow small muted" style="border-top:0"><span></span><span class="nm">Ejercicio</span><span>Series</span><span>Repeticiones</span><span>Carga</span><span>Descanso</span></div>' +
       t.sheet.exercises.map((e, i) => '<div class="rxrow" data-i="' + i + '"><input type="checkbox" id="rx-on-' + i + '" checked aria-label="Incluir ' + esc(e.name) + '">' +
         '<span class="nm"><b>' + esc(e.name) + "</b></span>" +
@@ -80,21 +82,25 @@ function openPrescribe(patient) {
     const t = templates.find((x) => x.id === $("#rx-tpl").value), err = $("#rx-err");
     const weekdays = $$(".days input:checked", rxBody).map((c) => Number(c.value));
     const chosen = $$("#rx-ex .rxrow[data-i]").filter((r) => $("input[type=checkbox]", r).checked);
-    if (!weekdays.length || !chosen.length) { err.textContent = "Elige al menos un día y un ejercicio."; err.hidden = false; return; }
+    if (!weekdays.length) { err.textContent = "Elige al menos un día de la semana."; err.hidden = false; return; }
     const btn = $("button[type=submit]", rxBody); btn.disabled = true;
     try {
       const { data: { session } } = await sb.auth.getSession();
-      const access = $("#rx-access").value;
+      const access = "free_consult"; // el paciente nunca paga: todo acceso es por asignación
       const prog = await must(sb.from("patient_programs").insert({ patient_id: patient.id, product_id: t.id, therapist_id: session.user.id, title: t.title, start_date: $("#rx-start").value, weekdays, clinical_notes: $("#rx-notes").value.trim(), access_type: access }).select().single());
-      await must(sb.from("program_exercises").insert(chosen.map((r, pos) => {
+      if (chosen.length) await must(sb.from("program_exercises").insert(chosen.map((r, pos) => {
         const src = t.sheet.exercises[Number(r.dataset.i)], v = (f) => $('[data-f="' + f + '"]', r).value.trim();
         return { program_id: prog.id, position: pos, name: src.name, goal: src.goal || "", sets: v("sets"), reps: v("reps"), load: v("load"), rest: v("rest"), pain: src.pain || "", instructions: v("instructions"), errors: src.errors || [], pose: src.pose || [], video: src.video || "" };
       })));
-      // Gratuito de consulta: se desbloquea también la ficha completa de la plantilla.
-      if (access === "free_consult") await sb.from("accesses").upsert({ patient_id: patient.id, product_id: t.id, method: "assigned" }, { onConflict: "patient_id,product_id", ignoreDuplicates: true });
+      // La asignación es lo único que da acceso a la infografía y los archivos del programa.
+      await must(sb.from("accesses").upsert({ patient_id: patient.id, product_id: t.id, method: "assigned" }, { onConflict: "patient_id,product_id", ignoreDuplicates: true }));
       drawShare(patient, prog);
-      loadPatients();
-    } catch (x) { err.textContent = x.message; err.hidden = false; btn.disabled = false; }
+      refreshBilling();
+    } catch (x) {
+      btn.disabled = false;
+      if (/row-level/.test(x.message)) { rx.close(); return upgradeModal(bill && !bill.writable ? "blocked" : "patients"); }
+      err.textContent = x.message; err.hidden = false;
+    }
   };
   rx.showModal();
 }
@@ -102,13 +108,15 @@ function openPrescribe(patient) {
 function drawShare(patient, prog) {
   const link = planLink(prog.id), phone = (patient.phone || "").replace(/\D/g, "");
   const text = "Hola" + (patient.full_name ? " " + patient.full_name.split(" ")[0] : "") + ", aquí tienes tu plan de ejercicios «" + prog.title + "»: " + link;
-  rxBody.innerHTML = rxHead("Plan prescrito") + '<p>«' + esc(prog.title) + "» · " + ACCESS_LABEL[prog.access_type] + ".</p>" +
+  rxBody.innerHTML = rxHead("Programa asignado") + '<p>«' + esc(prog.title) + "» ya está en el portal de " + esc(patient.full_name) + ".</p>" +
     '<p class="muted small">' + (patient.user_id ? "El paciente ya tiene cuenta: lo verá en «Mi plan»." : patient.email ? "El paciente lo verá al registrarse en el portal con " + esc(patient.email) + "." : "Añade un email a la ficha para que el paciente pueda entrar en el portal.") + "</p>" +
     '<label>Enlace directo<input type="text" id="rx-link" readonly value="' + esc(link) + '"></label>' +
     '<div class="actions"><a class="pill sm" target="_blank" rel="noopener" href="https://wa.me/' + phone + "?text=" + encodeURIComponent(text) + '">Enviar por WhatsApp</a>' +
     '<a class="ghost on-white sm" href="mailto:' + encodeURIComponent(patient.email || "") + "?subject=" + encodeURIComponent("Tu plan de ejercicios") + "&body=" + encodeURIComponent(text) + '">Enviar por email</a>' +
-    '<button class="ghost on-white sm" type="button" id="rx-copy">Copiar enlace</button></div>';
+    '<button class="ghost on-white sm" type="button" id="rx-copy">Copiar enlace</button>' +
+    '<button class="ghost on-white sm" type="button" id="rx-more">Asignar otro programa</button></div>';
   wireClose();
+  $("#rx-more").onclick = () => openPrescribe(patient);
   $("#rx-copy").onclick = () => navigator.clipboard.writeText(link).then(() => toast("Enlace copiado."), () => $("#rx-link").select());
 }
 
@@ -124,7 +132,7 @@ async function openEvolution(programId, refresh) {
   const sessions = logs.filter((l) => !l.program_exercise_id).sort((a, b) => (a.log_date + a.created_at < b.log_date + b.created_at ? -1 : 1));
   const painPts = sessions.filter((l) => l.pain_eva != null).map((l) => ({ x: shortDate(l.log_date), y: l.pain_eva, tip: shortDate(l.log_date) + ": dolor " + l.pain_eva + "/10" + (l.effort_rpe ? ", esfuerzo " + l.effort_rpe + "/10" : "") }));
   rxBody.innerHTML = rxHead(g.patients.full_name + " · " + g.title) +
-    '<div class="actions">' + levelChip(s.level, s.label) + '<label style="flex-direction:row;align-items:center;gap:8px">Estado<select id="evo-status" style="width:auto;padding:8px 12px">' + Object.keys(PROGRAM_STATUS).map((k) => '<option value="' + k + '"' + (g.status === k ? " selected" : "") + ">" + PROGRAM_STATUS[k] + "</option>").join("") + "</select></label></div>" +
+    '<div class="actions">' + levelChip(s.level, s.label) + '<label style="flex-direction:row;align-items:center;gap:8px">Estado<select id="evo-status" style="width:auto;padding:8px 12px">' + Object.keys(PROGRAM_STATUS).map((k) => '<option value="' + k + '"' + (g.status === k ? " selected" : "") + ">" + PROGRAM_STATUS[k] + "</option>").join("") + "</select></label>" + '<button class="danger sm" type="button" id="evo-remove">Retirar programa</button></div>' +
     '<div class="kpis"><div><span class="muted small">Adherencia 7 días</span><b>' + (s.adherence == null ? "—" : s.adherence + " %") + '</b></div><div><span class="muted small">Última actividad</span><b>' + (s.last ? shortDate(s.last) : "—") + '</b></div><div><span class="muted small">Dolor máx. 48 h</span><b>' + (s.pain48 == null ? "—" : s.pain48 + " / 10") + '</b></div><div><span class="muted small">Sesiones registradas</span><b>' + sessions.length + "</b></div></div>" +
     "<div><h3>Dolor EVA por sesión</h3>" + lineChart(painPts, { max: 10, ticks: [0, 5, 10], title: "Dolor EVA por sesión, de 0 a 10", threshold: 6, thresholdLabel: "Alerta", empty: "El paciente aún no ha registrado ninguna sesión." }) + "</div>" +
     "<div><h3>Cumplimiento semanal</h3>" + lineChart(weeklyAdherence(g, logs), { max: 100, ticks: [0, 50, 100], unit: " %", title: "Porcentaje de sesiones previstas completadas cada semana", empty: "Aún no hay semanas con sesiones previstas." }) + "</div>" +
@@ -134,7 +142,20 @@ async function openEvolution(programId, refresh) {
     '<div><h3>Chat con el paciente</h3><div class="chat" id="evo-chat">' + chatHtml(msgs, "therapist") + '</div><form class="chatform" id="evo-form" style="margin-top:10px"><textarea id="evo-msg" maxlength="2000" required aria-label="Mensaje" placeholder="Escribe al paciente…"></textarea><button class="pill" type="submit">Enviar</button></form></div>';
   wireClose(); wireCharts(rxBody);
   const chat = $("#evo-chat"); chat.scrollTop = chat.scrollHeight;
-  $("#evo-status").onchange = async (e) => { try { await must(sb.from("patient_programs").update({ status: e.target.value }).eq("id", g.id)); toast("Estado actualizado."); } catch (err) { toast(err.message, true); } };
+  $("#evo-status").onchange = async (e) => { try { await must(sb.from("patient_programs").update({ status: e.target.value }).eq("id", g.id)); toast("Estado actualizado."); refreshBilling(); } catch (err) { toast(/row-level/.test(err.message) ? "Tu plan no admite más pacientes activos." : err.message, true); } };
+  // Retirar el programa quita también el acceso del paciente a su infografía, salvo que tenga otro plan del mismo programa.
+  $("#evo-remove").onclick = async (e) => {
+    const b = e.currentTarget;
+    if (b.dataset.armed !== "1") { b.dataset.armed = "1"; b.textContent = "¿Seguro? Se borra su historial"; return; }
+    try {
+      await must(sb.from("patient_programs").delete().eq("id", g.id));
+      if (g.product_id) {
+        const rest = await must(sb.from("patient_programs").select("id").eq("patient_id", g.patient_id).eq("product_id", g.product_id));
+        if (!rest.length) await must(sb.from("accesses").delete().eq("patient_id", g.patient_id).eq("product_id", g.product_id));
+      }
+      rx.close(); refreshBilling();
+    } catch (err) { toast(err.message, true); }
+  };
   $("#evo-form").onsubmit = async (e) => {
     e.preventDefault();
     const { data: { session } } = await sb.auth.getSession();

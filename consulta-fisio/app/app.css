@@ -236,3 +236,15 @@ table.track td{padding:14px 12px;border-bottom:1px solid var(--hair-soft);vertic
 .note{background:#E3EEFA;border-radius:16px;padding:14px 16px}
 .sticky-cta{position:sticky;bottom:max(12px,env(safe-area-inset-bottom,0px));display:flex;justify-content:center;margin-top:20px;z-index:5}
 .sticky-cta .pill{box-shadow:0 10px 30px -10px rgba(0,60,130,.6);padding:16px 28px}
+
+/* suscripción de la clínica */
+.banner{background:#E3EEFA;color:var(--ink);font-size:.88rem}
+.banner.amber{background:var(--warn-bg);color:var(--warn)}
+.banner.red{background:var(--bad-bg);color:var(--bad)}
+.banner .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:40px;padding-top:6px;padding-bottom:6px;flex-wrap:wrap}
+.banner .tab{background:var(--white);color:var(--ink)}
+.plans{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+@media (max-width:820px){.plans{grid-template-columns:minmax(0,1fr)}}
+.plans .choice{background:var(--grey)}
+#upgrade{width:min(520px,calc(100vw - 24px))}
+.chatform input{flex:1}
