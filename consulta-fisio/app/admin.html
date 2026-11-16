@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Panel · Gestión de consulta</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="nav">
+  <div class="wrap">
+    <span class="brand">Gestión de consulta <span class="muted">· Panel</span></span>
+    <nav id="nav" hidden>
+      <button class="tab" type="button" data-view="seguimiento">Seguimiento</button>
+      <button class="tab" type="button" data-view="productos" aria-current="true">Infoproductos</button>
+      <button class="tab" type="button" data-view="pacientes">Pacientes</button>
+      <a class="tab" href="portal.html" target="_blank" rel="noopener">Ver portal</a>
+      <button class="tab" type="button" id="logout">Salir</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <section id="auth"></section>
+
+  <section id="denied" hidden>
+    <div class="panel authbox stack">
+      <h2>Esta cuenta no gestiona la clínica</h2>
+      <p class="muted">El panel ya tiene una cuenta administradora. Si eres paciente, tus programas están en el portal.</p>
+      <a class="pill" href="portal.html">Ir al portal</a>
+    </div>
+  </section>
+
+  <section id="v-productos" hidden>
+    <div class="pagehead">
+      <h1>Infoproductos</h1>
+      <button class="pill" type="button" id="new-product">Nuevo infoproducto</button>
+    </div>
+    <div class="stats" id="stats"></div>
+    <div id="plan"></div>
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <section id="v-seguimiento" hidden>
+    <div class="pagehead"><h1>Seguimiento</h1></div>
+    <div class="stats" id="track-stats"></div>
+    <div id="tracking"></div>
+  </section>
+
+  <section id="v-pacientes" hidden>
+    <div class="pagehead">
+      <h1>Pacientes</h1>
+      <button class="pill" type="button" id="new-patient">Nuevo paciente</button>
+    </div>
+    <div class="split">
+      <div class="panel" id="patient-list"></div>
+      <div class="panel" id="patient-card"></div>
+    </div>
+  </section>
+</main>
+
+<dialog id="rx" aria-label="Prescripción y evolución"><div class="dlg" id="rx-body"></div></dialog>
+<dialog id="editor" aria-label="Editor de infoproducto"><div class="dlg" id="editor-body"></div></dialog>
+
+<script src="vendor/supabase.js"></script>
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script src="clinical.js"></script>
+<script src="seed-data.js"></script>
+<script src="admin.js"></script>
+<script src="tracking.js"></script>
+</body>
+</html>

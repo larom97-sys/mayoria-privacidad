@@ -1,0 +1,530 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Gestión de consulta fisio</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Hoja de gestión para fisioterapeutas y clínicas: pacientes, sesiones, cobros y resumen de la consulta, calculado solo.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: lujo clínico limpio. Hero centrado con la hoja como "foto de producto"; bandas blanco / gris #F5F5F7 sin bordes duros;
+   bento de datos clave; ficha de producto con pestañas. Aspecto único en claro, por decisión de diseño. */
+:root{
+  color-scheme:light;
+  --white:#FFFFFF; --grey:#F5F5F7; --ink:#1D1D1F; --muted:#6E6E73; --hair:#D2D2D7; --hair-soft:#E8E8ED;
+  --accent:#0066CC; --accent-press:#0055AD; --on-accent:#FFFFFF;
+  --ok:#1B6B46; --ok-bg:#E6F2EB; --off:#6E6E73; --off-bg:#EDEDF0; --bad:#A83A32; --bad-bg:#F8E9E7; --warn:#7A5B12; --warn-bg:#F6EFD9;
+  --font:"Inter",-apple-system,BlinkMacSystemFont,"Helvetica Neue","Segoe UI",Arial,sans-serif;
+  --ease:cubic-bezier(0.16,1,0.3,1);
+  --r:24px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--white);color:var(--ink);font:400 17px/1.55 var(--font);-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--white)}
+.wrap{max-width:1120px;margin:0 auto;padding-left:max(22px,env(safe-area-inset-left,0px));padding-right:max(22px,env(safe-area-inset-right,0px))}
+h1,h2,h3,p{margin:0}
+h1,h2,h3{text-wrap:balance}
+h1{font-size:clamp(2.7rem,7.2vw,5.5rem);line-height:1.03;letter-spacing:-.03em;font-weight:700}
+h2{font-size:clamp(2rem,4.6vw,3.5rem);line-height:1.06;letter-spacing:-.03em;font-weight:600}
+h3{font-size:1.3rem;line-height:1.2;letter-spacing:-.02em;font-weight:600}
+a{color:inherit}
+.muted{color:var(--muted)}
+.sub{font-size:clamp(1.1rem,2vw,1.4rem);line-height:1.4;color:var(--muted);letter-spacing:-.01em}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:6px}
+
+/* nav */
+.nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:rgba(255,255,255,.72);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid rgba(0,0,0,.06)}
+.nav .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;height:52px}
+.brand{font-weight:600;font-size:.98rem;letter-spacing:-.01em;text-decoration:none;white-space:nowrap}
+.nav nav{display:flex;align-items:center;gap:28px;font-size:.82rem}
+.nav nav a{text-decoration:none;color:var(--muted);transition:color .3s var(--ease)}
+.nav nav a:hover{color:var(--ink)}
+@media (max-width:760px){.nav nav a.l{display:none}}
+
+.pill{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;background:var(--accent);color:var(--on-accent);font:500 1.05rem/1 var(--font);letter-spacing:-.01em;text-decoration:none;padding:16px 28px;border:0;cursor:pointer;transition:background .4s var(--ease),transform .4s var(--ease)}
+.nav nav a.pill{color:var(--on-accent);padding:8px 15px;font-size:.8rem}
+.pill:hover{background:var(--accent-press)}
+.pill:active{transform:scale(.98)}
+.more{color:var(--accent);text-decoration:none;font-size:1.05rem}
+.more:hover{text-decoration:underline}
+
+/* hero */
+.hero{text-align:center;padding-block:96px 0}
+.hero .kicker{font-size:1rem;font-weight:500;color:var(--muted);margin-bottom:18px}
+.hero h1{max-width:12em;margin:0 auto 22px}
+.hero .sub{max-width:34em;margin:0 auto 34px}
+.hero .cta{display:flex;flex-wrap:wrap;gap:14px 28px;justify-content:center;align-items:center}
+@media (max-width:760px){.hero{padding-top:64px}}
+
+/* producto: la hoja */
+.stage{margin-top:72px;background:var(--grey);border-radius:32px;padding:56px 56px 36px;text-align:left}
+@media (max-width:760px){.stage{padding:18px 14px 20px;border-radius:24px;margin-top:48px}}
+.sheet{background:var(--white);border-radius:18px;overflow:hidden;box-shadow:0 24px 60px -32px rgba(0,0,0,.28),0 0 0 1px rgba(0,0,0,.05)}
+.tabs{display:flex;gap:4px;padding:10px 12px;border-bottom:1px solid var(--hair-soft);overflow-x:auto;align-items:center}
+.tabs button,.ptabs button{flex:none;appearance:none;border:0;background:transparent;color:var(--muted);font:500 .86rem/1 var(--font);padding:9px 14px;border-radius:999px;cursor:pointer;transition:background .4s var(--ease),color .4s var(--ease)}
+.tabs button[aria-selected="true"]{background:var(--ink);color:var(--white)}
+.tabs .ex{margin-left:auto;padding-left:14px;font-size:.76rem;color:var(--muted);white-space:nowrap}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.86rem;line-height:1.3}
+#p-sesiones table{min-width:600px}
+#p-pacientes table{min-width:560px}
+th{font-weight:500;text-align:left;color:var(--muted);padding:12px 16px;border-bottom:1px solid var(--hair-soft);white-space:nowrap;font-size:.78rem}
+td{padding:11px 16px;border-bottom:1px solid var(--hair-soft);white-space:nowrap}
+.num{text-align:right}
+.c{text-align:center}
+.chip,.state{border-radius:999px;font:500 .78rem/1.2 var(--font);padding:5px 11px;display:inline-block}
+.state{appearance:none;-webkit-appearance:none;border:0;padding-right:26px;cursor:pointer;background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);background-position:calc(100% - 14px) 55%,calc(100% - 9px) 55%;background-size:5px 5px;background-repeat:no-repeat}
+.state option{background:var(--white);color:var(--ink)}
+[data-v="Realizada"],[data-v="Activo"],[data-v="Sí"]{background-color:var(--ok-bg);color:var(--ok)}
+[data-v="Cancelada"],[data-v="Alta"]{background-color:var(--off-bg);color:var(--off)}
+[data-v="No asistió"],[data-v="No"]{background-color:var(--bad-bg);color:var(--bad)}
+[data-v="Pendiente"],[data-v="Pausado"]{background-color:var(--warn-bg);color:var(--warn)}
+input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent);cursor:pointer;vertical-align:middle}
+.strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin:0}
+.strip div{padding:20px 16px 22px;min-width:0}
+.strip dt{font-size:.76rem;color:var(--muted)}
+.strip dd{margin:4px 0 0;font-size:1.7rem;font-weight:600;letter-spacing:-.03em;white-space:nowrap}
+.strip .owe dd{color:var(--accent)}
+@media (max-width:560px){.strip{grid-template-columns:repeat(2,minmax(0,1fr))}.strip div:nth-child(n+3){padding-top:0}}
+.pasos{margin:0;padding:26px 28px;list-style:none;display:flex;flex-direction:column;gap:16px;font-size:.95rem;color:var(--muted)}
+.pasos b{color:var(--ink);font-weight:600}
+.kv td:first-child{white-space:normal}
+.kv td:last-child{text-align:right;font-weight:600}
+.kv tr.owe td:last-child{color:var(--accent)}
+.kv tr:last-child td{border-bottom:0}
+.hint{margin-top:22px;text-align:center;font-size:.86rem;color:var(--muted)}
+@keyframes bump{from{transform:translateY(6px);opacity:.2}to{transform:none;opacity:1}}
+.bump{animation:bump .6s var(--ease)}
+
+/* secciones */
+section{padding-block:128px}
+.grey{background:var(--grey)}
+.head{text-align:center;max-width:44em;margin:0 auto 64px;display:flex;flex-direction:column;gap:18px}
+@media (max-width:760px){section{padding-block:84px}.head{margin-bottom:44px}}
+
+/* bento */
+.bento{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:20px}
+.card{background:var(--grey);border-radius:var(--r);padding:36px;min-width:0;display:flex;flex-direction:column;justify-content:space-between;gap:28px;min-height:250px;transition:transform .6s var(--ease)}
+.card:hover{transform:scale(1.015)}
+.grey .card{background:var(--white)}
+.card .fig{font-size:clamp(3.2rem,6vw,5rem);line-height:.95;font-weight:600;letter-spacing:-.045em}
+.card .fig small{font-size:.32em;font-weight:500;letter-spacing:-.02em;color:var(--muted);margin-left:.25em}
+.card p{color:var(--muted);font-size:1rem;max-width:26em}
+.card h3{margin-bottom:8px}
+.s2{grid-column:span 2}.s3{grid-column:span 3}.s4{grid-column:span 4}
+.card.ink{background:var(--ink);color:var(--white)}
+.card.ink p,.card.ink .fig small{color:#A1A1A6}
+.types{display:flex;flex-wrap:wrap;gap:8px;list-style:none;margin:0;padding:0;font-size:.86rem}
+.types li{padding:7px 13px;border-radius:999px;background:var(--white);color:var(--ink)}
+@media (max-width:900px){.s2,.s3,.s4{grid-column:span 3}.s4{grid-column:span 6}}
+@media (max-width:600px){.s2,.s3,.s4{grid-column:span 6}.card{min-height:0;padding:28px}}
+
+/* para quién */
+.duo{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.duo .card{min-height:0;justify-content:flex-start;padding:44px}
+.duo ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:14px;color:var(--muted)}
+.duo li{padding-top:14px;border-top:1px solid var(--hair-soft)}
+.duo .who{font-size:.9rem;font-weight:500;color:var(--muted)}
+@media (max-width:760px){.duo{grid-template-columns:minmax(0,1fr)}.duo .card{padding:30px}}
+
+/* ficha de producto */
+.product{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:64px;align-items:center}
+.shot{background:var(--grey);border-radius:var(--r);padding:36px;min-width:0;transition:transform .6s var(--ease)}
+.shot:hover{transform:scale(1.015)}
+.shot .sheet{box-shadow:0 18px 40px -28px rgba(0,0,0,.3),0 0 0 1px rgba(0,0,0,.05)}
+.shot .cap{font-size:.8rem;color:var(--muted);padding:14px 16px 4px}
+.buy{display:flex;flex-direction:column;gap:22px;min-width:0;align-items:flex-start}
+.buy h2{font-size:clamp(2rem,3.6vw,2.8rem)}
+.price{font-size:2rem;font-weight:600;letter-spacing:-.03em}
+.todo{font-size:.9rem;font-weight:500;letter-spacing:0;color:var(--muted);border:1px dashed var(--hair);border-radius:10px;padding:8px 12px;display:inline-block}
+.mail{display:flex;width:100%;max-width:420px;border:1px solid var(--hair);border-radius:999px;overflow:hidden}
+.mail output{flex:1;min-width:0;padding:13px 18px;font-size:.92rem;overflow-wrap:anywhere;user-select:all}
+.mail button{flex:none;border:0;background:var(--accent);color:var(--on-accent);font:500 .92rem/1 var(--font);padding:0 20px;cursor:pointer;transition:background .4s var(--ease)}
+.mail button:hover{background:var(--accent-press)}
+.seals{display:flex;flex-wrap:wrap;gap:10px 26px;list-style:none;margin:6px 0 0;padding:20px 0 0;border-top:1px solid var(--hair-soft);width:100%;font-size:.84rem;color:var(--muted)}
+.seals li{display:flex;align-items:center;gap:8px}
+.seals svg{flex:none}
+@media (max-width:860px){.product{grid-template-columns:minmax(0,1fr);gap:36px}.shot{padding:16px}}
+
+.specs{margin-top:72px}
+.ptabs{display:flex;gap:6px;border-bottom:1px solid var(--hair-soft);overflow-x:auto}
+.ptabs button{border-radius:0;padding:16px 4px;margin-right:26px;font-size:1rem;border-bottom:2px solid transparent;margin-bottom:-1px}
+.ptabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.spec{margin:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 64px}
+.spec div{display:grid;grid-template-columns:minmax(0,11em) minmax(0,1fr);gap:16px;padding:18px 0;border-bottom:1px solid var(--hair-soft)}
+.spec dt{color:var(--muted);font-size:.92rem}
+.spec dd{margin:0;font-size:.95rem}
+@media (max-width:760px){.spec{grid-template-columns:minmax(0,1fr)}.spec div{grid-template-columns:minmax(0,1fr);gap:4px}}
+
+/* tienda */
+.filters{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:-24px 0 44px}
+.filters button{appearance:none;border:0;border-radius:999px;background:var(--white);color:var(--ink);font:500 .9rem/1 var(--font);padding:11px 18px;cursor:pointer;transition:background .4s var(--ease),color .4s var(--ease)}
+.filters button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+.shop{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+@media (max-width:900px){.shop{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:600px){.shop{grid-template-columns:minmax(0,1fr)}}
+.prod{background:var(--white);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column;min-width:0;transition:transform .6s var(--ease)}
+.prod:hover{transform:scale(1.015)}
+.cover{aspect-ratio:16/10;max-width:100%;background:var(--hair-soft);display:flex;flex-direction:column;justify-content:space-between;padding:20px 22px;color:var(--muted);font-size:.82rem}
+.cover b{font-size:2.2rem;line-height:1;font-weight:600;letter-spacing:-.04em;color:var(--ink)}
+.cover .eg{align-self:flex-start;background:var(--white);border-radius:999px;padding:5px 11px;font-size:.74rem}
+.prod .body{padding:24px 24px 26px;display:flex;flex-direction:column;gap:10px;flex:1}
+.prod .cat{font-size:.8rem;color:var(--muted)}
+.prod p{color:var(--muted);font-size:.95rem}
+.prod .row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:auto;padding-top:16px}
+.prod .amt{font-size:1.25rem;font-weight:600;letter-spacing:-.02em}
+.prod .pill{padding:11px 18px;font-size:.9rem}
+.prod .pending{font-size:.82rem;color:var(--muted);border:1px dashed var(--hair);border-radius:999px;padding:9px 14px}
+.shopnote{text-align:center;font-size:.86rem;color:var(--muted);margin-top:36px}
+
+/* dudas */
+.faq{max-width:760px;margin:0 auto}
+details{border-bottom:1px solid var(--hair)}
+summary{cursor:pointer;list-style:none;padding:24px 40px 24px 0;font-size:1.15rem;font-weight:600;letter-spacing:-.015em;position:relative}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"";position:absolute;right:6px;top:50%;width:10px;height:10px;border-right:1.5px solid var(--muted);border-bottom:1.5px solid var(--muted);transform:translateY(-70%) rotate(45deg);transition:transform .5s var(--ease)}
+details[open] summary::after{transform:translateY(-30%) rotate(-135deg)}
+details p{padding:0 0 26px;color:var(--muted);max-width:58ch}
+
+footer{padding-block:28px 40px;font-size:.78rem;color:var(--muted);border-top:1px solid var(--hair-soft)}
+footer .wrap{display:flex;flex-wrap:wrap;gap:8px 28px;justify-content:space-between}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}html{scroll-behavior:auto}}
+</style>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="#inicio">Gestión de consulta</a>
+    <nav>
+      <a class="l" href="#claves">Claves</a>
+      <a class="l" href="#para-quien">Para quién</a>
+      <a class="l" href="#ficha">Ficha</a>
+      <a class="l" href="#tienda">Tienda</a>
+      <a class="l" href="#dudas">Dudas</a>
+      <a class="pill" href="#ficha">Conseguir</a>
+    </nav>
+  </div>
+</header>
+
+<main id="inicio">
+<div class="wrap hero">
+  <p class="kicker">Para fisioterapeutas y clínicas</p>
+  <h1>Tu consulta, bajo control.</h1>
+  <p class="sub">Pacientes, sesiones y cobros en una sola hoja que se calcula sola.</p>
+  <div class="cta">
+    <a class="pill" href="#ficha">Conseguir la hoja</a>
+    <a class="more" href="#claves">Ver las claves ›</a>
+  </div>
+
+  <div class="stage">
+    <div class="sheet">
+      <div class="tabs" role="tablist" aria-label="Pestañas de la hoja">
+        <button type="button" role="tab" id="t-inicio" aria-controls="p-inicio" aria-selected="false">Inicio</button>
+        <button type="button" role="tab" id="t-pacientes" aria-controls="p-pacientes" aria-selected="false">Pacientes</button>
+        <button type="button" role="tab" id="t-sesiones" aria-controls="p-sesiones" aria-selected="true">Sesiones</button>
+        <button type="button" role="tab" id="t-resumen" aria-controls="p-resumen" aria-selected="false">Resumen</button>
+        <span class="ex">Datos de ejemplo</span>
+      </div>
+      <div id="p-inicio" role="tabpanel" aria-labelledby="t-inicio" hidden>
+        <ol class="pasos">
+          <li><b>Paso 1. Pacientes.</b> Anota cada paciente nuevo con un código (P-003, P-004...) y sus iniciales.</li>
+          <li><b>Paso 2. Sesiones.</b> Cada cita va en una fila. Escribe el código del paciente y el nombre aparece solo.</li>
+          <li><b>Paso 3. Cobro.</b> Marca la casilla Cobrado cuando te paguen. Lo que quede sin marcar aparece en Pendiente de cobro.</li>
+          <li><b>Paso 4. Resumen.</b> Revisa aquí tus cifras. No escribas en esta pestaña, se calcula sola.</li>
+        </ol>
+      </div>
+      <div id="p-pacientes" role="tabpanel" aria-labelledby="t-pacientes" hidden>
+        <div class="scroll"><table>
+          <thead><tr><th>ID</th><th>Iniciales</th><th>Alta</th><th>Mutua</th><th>Estado</th><th class="num">Nº sesiones</th><th>RGPD</th></tr></thead>
+          <tbody id="pac"></tbody>
+        </table></div>
+      </div>
+      <div id="p-sesiones" role="tabpanel" aria-labelledby="t-sesiones">
+        <div class="scroll"><table>
+          <thead><tr><th>Fecha</th><th>ID</th><th>Paciente</th><th>Tipo</th><th>Estado</th><th class="num">Tarifa €</th><th class="c">Cobrado</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table></div>
+        <dl class="strip" aria-live="polite">
+          <div><dt>Sesiones realizadas</dt><dd id="k-real">0</dd></div>
+          <div><dt>Ingresos cobrados</dt><dd id="k-cob">0 €</dd></div>
+          <div class="owe"><dt>Pendiente de cobro</dt><dd id="k-pen">0 €</dd></div>
+          <div><dt>No asistencia</dt><dd id="k-tasa">0 %</dd></div>
+        </dl>
+      </div>
+      <div id="p-resumen" role="tabpanel" aria-labelledby="t-resumen" hidden>
+        <table class="kv"><thead><tr><th>Indicador</th><th class="num">Valor</th></tr></thead><tbody class="res-out"></tbody></table>
+      </div>
+    </div>
+    <p class="hint">Es la hoja real. Marca una casilla de Cobrado y observa el pendiente de cobro.</p>
+  </div>
+</div>
+
+<section id="claves">
+  <div class="wrap">
+    <div class="head">
+      <h2>Menos administración. Más consulta.</h2>
+      <p class="sub">Lo esencial de la gestión diaria, resuelto con precisión.</p>
+    </div>
+    <div class="bento">
+      <article class="card s4 ink">
+        <p class="fig">1<small>casilla</small></p>
+        <div><h3>Sabes quién te debe una sesión.</h3><p>Marcas Cobrado y listo. Lo que queda sin marcar se suma solo en Pendiente de cobro.</p></div>
+      </article>
+      <article class="card s2">
+        <p class="fig">0<small>fórmulas</small></p>
+        <div><h3>Nada que configurar.</h3><p>Todos los cálculos llegan hechos.</p></div>
+      </article>
+      <article class="card s2">
+        <p class="fig">8<small>indicadores</small></p>
+        <div><h3>Tu mes, a la vista.</h3><p>Ingresos, pendientes, cancelaciones y tasa de no asistencia, siempre actualizados.</p></div>
+      </article>
+      <article class="card s2">
+        <p class="fig">4<small>pestañas</small></p>
+        <div><h3>Conectadas entre sí.</h3><p>Inicio, Pacientes, Sesiones y Resumen. Escribes en dos; el resto se calcula.</p></div>
+      </article>
+      <article class="card s2">
+        <p class="fig">499<small>sesiones</small></p>
+        <div><h3>Capacidad de serie.</h3><p>Ampliable extendiendo las fórmulas hacia abajo.</p></div>
+      </article>
+      <article class="card s3">
+        <ul class="types"><li>Individual</li><li>Domiciliaria</li><li>Telemedicina</li><li>Grupal</li></ul>
+        <div><h3>Cuatro tipos de sesión.</h3><p>Cada cita con su tipo, su tarifa y su estado: realizada, cancelada o no asistió.</p></div>
+      </article>
+      <article class="card s3">
+        <p class="fig">RGPD</p>
+        <div><h3>Consentimiento, controlado.</h3><p>Una columna por paciente y un aviso de cuántos faltan por firmar.</p></div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="grey" id="para-quien">
+  <div class="wrap">
+    <div class="head">
+      <h2>Para una camilla. O para cinco.</h2>
+    </div>
+    <div class="duo">
+      <article class="card">
+        <p class="who">Fisioterapeuta autónomo</p>
+        <h3>La cuenta clara, sin dedicarle la tarde del domingo.</h3>
+        <ul>
+          <li>Consulta, domicilios y telemedicina en un mismo registro.</li>
+          <li>Número de sesiones por paciente, contado automáticamente.</li>
+          <li>Cobrado y pendiente, siempre al día.</li>
+        </ul>
+      </article>
+      <article class="card">
+        <p class="who">Clínica o centro</p>
+        <h3>Un único archivo que recepción rellena y dirección consulta.</h3>
+        <ul>
+          <li>Listas desplegables: todo el equipo anota con el mismo criterio.</li>
+          <li>Pacientes activos, en pausa y de alta, en una columna.</li>
+          <li>La tasa de no asistencia como dato, no como impresión.</li>
+        </ul>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section id="ficha">
+  <div class="wrap">
+    <div class="product">
+      <div class="shot">
+        <div class="sheet">
+          <p class="cap">Resumen · datos de ejemplo</p>
+          <table class="kv"><tbody class="res-out"></tbody></table>
+        </div>
+      </div>
+      <div class="buy">
+        <p class="muted">Hoja de cálculo · para fisioterapeutas y clínicas</p>
+        <h2>Gestión de consulta</h2>
+        <p class="price" id="price"><span class="todo">Precio pendiente de definir</span></p>
+        <p class="muted">Escribe a esta dirección y te enviamos la hoja con las instrucciones de acceso.</p>
+        <div class="mail">
+          <output id="email">tu-correo@tudominio.es</output>
+          <button type="button" id="copy">Copiar</button>
+        </div>
+        <ul class="seals">
+          <li><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="8" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M5.5 9.2l2.3 2.3 4.7-5" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Fórmulas incluidas</li>
+          <li><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><rect x="2.5" y="1.5" width="13" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M5.5 6h7M5.5 9h7M5.5 12h4" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>Guía de inicio</li>
+          <li><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M9 1.5l6 2.3v4.6c0 3.7-2.5 6.6-6 8.1-3.5-1.5-6-4.4-6-8.1V3.8z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>Sin datos de salud</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="specs">
+      <div class="ptabs" role="tablist" aria-label="Ficha del producto">
+        <button type="button" role="tab" id="pt-spec" aria-controls="pp-spec" aria-selected="true">Especificaciones</button>
+        <button type="button" role="tab" id="pt-inc" aria-controls="pp-inc" aria-selected="false">Qué incluye</button>
+        <button type="button" role="tab" id="pt-lim" aria-controls="pp-lim" aria-selected="false">Limitaciones de uso</button>
+      </div>
+      <div id="pp-spec" role="tabpanel" aria-labelledby="pt-spec">
+        <dl class="spec">
+          <div><dt>Formato</dt><dd>Hoja de cálculo con 4 pestañas conectadas</dd></div>
+          <div><dt>Capacidad de serie</dt><dd>499 sesiones, ampliable</dd></div>
+          <div><dt>Tipos de sesión</dt><dd>Individual, domiciliaria, telemedicina, grupal</dd></div>
+          <div><dt>Estados de sesión</dt><dd>Realizada, cancelada, no asistió</dd></div>
+          <div><dt>Estados de paciente</dt><dd>Activo, pausado, alta</dd></div>
+          <div><dt>Indicadores</dt><dd>8, calculados automáticamente</dd></div>
+          <div><dt>Identificación</dt><dd>Código de paciente (P-001) e iniciales</dd></div>
+          <div><dt>Consentimiento RGPD</dt><dd>Sí, no o pendiente, por paciente</dd></div>
+        </dl>
+      </div>
+      <div id="pp-inc" role="tabpanel" aria-labelledby="pt-inc" hidden>
+        <dl class="spec">
+          <div><dt>Inicio</dt><dd>Guía en cuatro pasos y avisos de uso</dd></div>
+          <div><dt>Pacientes</dt><dd>Alta, contacto, mutua, estado, nº de sesiones y consentimiento</dd></div>
+          <div><dt>Sesiones</dt><dd>Fecha, hora, tipo, estado, tarifa, cobro y pendiente</dd></div>
+          <div><dt>Resumen</dt><dd>Ingresos, pendientes, ausencias y pacientes activos</dd></div>
+          <div><dt>Ejemplos</dt><dd>Dos filas de muestra para borrar al empezar</dd></div>
+          <div><dt>Controles</dt><dd>Listas desplegables y casillas de verificación</dd></div>
+        </dl>
+      </div>
+      <div id="pp-lim" role="tabpanel" aria-labelledby="pt-lim" hidden>
+        <dl class="spec">
+          <div><dt>Historia clínica</dt><dd>No es un registro clínico. La información de salud va en tu sistema oficial.</dd></div>
+          <div><dt>Consentimiento</dt><dd>La hoja controla quién ha firmado. Recogerlo y custodiarlo es responsabilidad del profesional.</dd></div>
+          <div><dt>Acceso</dt><dd>Contiene datos de pacientes. Compártela solo con quien deba verla.</dd></div>
+          <div><dt>Ausencias</dt><dd>De serie no suman en pendiente de cobro. Se ajusta cambiando una fórmula.</dd></div>
+        </dl>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="grey" id="tienda">
+  <div class="wrap">
+    <div class="head">
+      <h2>Programas y guías.</h2>
+      <p class="sub">Ejercicios en vídeo, guías en PDF y cursos para seguir el tratamiento en casa.</p>
+    </div>
+    <div class="filters" id="filters" role="group" aria-label="Filtrar por categoría"></div>
+    <div class="shop" id="shop"></div>
+    <p class="shopnote">El pago se realiza en una página externa segura. Estos programas no sustituyen a la valoración de tu fisioterapeuta.</p>
+  </div>
+</section>
+
+<section id="dudas">
+  <div class="wrap">
+    <div class="head"><h2>Preguntas frecuentes</h2></div>
+    <div class="faq">
+      <details><summary>¿Necesito saber de hojas de cálculo?</summary><p>No. Solo escribes en Pacientes y en Sesiones. Las fórmulas ya están puestas y el resumen se calcula solo.</p></details>
+      <details><summary>¿Puedo guardar aquí la historia clínica?</summary><p>No. Es una herramienta administrativa para citas, cobros y control del consentimiento. La información de salud debe ir en tu registro clínico oficial.</p></details>
+      <details><summary>Cobro las ausencias. ¿Me sirve?</summary><p>Sí. De serie, las sesiones canceladas o no asistidas no suman en pendiente de cobro. Se cambia modificando una sola fórmula, indicada en la guía de inicio.</p></details>
+      <details><summary>¿Qué hago el primer día?</summary><p>Borrar las dos filas de ejemplo, dar de alta a tus pacientes con su código y anotar la primera cita.</p></details>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Gestión de consulta para fisioterapeutas</span>
+    <span>Herramienta administrativa. No sustituye a tu registro clínico.</span>
+  </div>
+</footer>
+
+<script>
+/* Sustituye estos dos valores por los reales. */
+var PRECIO = "";            // p. ej. "29 €"
+var EMAIL  = "";            // p. ej. "hola@tudominio.es"
+
+/* Tienda de infoproductos. Son EJEMPLOS: sustituye cada uno por tus productos reales.
+   precio: 0 = gratuito. enlace: URL de pago o descarga externa (Stripe Payment Link, Gumroad, etc.).
+   Pon ejemplo:false cuando el producto sea real, y desaparece la etiqueta "Ejemplo". */
+var PRODUCTOS = [
+  {titulo:"Programa de suelo pélvico", categoria:"Suelo pélvico", tipo:"Vídeo", detalle:"8 lecciones", precio:39, descripcion:"Ejercicios guiados en vídeo, de menos a más, para hacer en casa.", enlace:"", ejemplo:true},
+  {titulo:"Guía de higiene lumbar", categoria:"Lumbalgia", tipo:"PDF", detalle:"Guía descargable", precio:0, descripcion:"Pautas posturales y de movimiento para el día a día.", enlace:"", ejemplo:true},
+  {titulo:"Vuelta a correr tras una lesión", categoria:"Readaptación deportiva", tipo:"Curso", detalle:"12 lecciones", precio:59, descripcion:"Progresión por fases para retomar la carrera con criterio.", enlace:"", ejemplo:true},
+  {titulo:"Sesiones grabadas de espalda", categoria:"Lumbalgia", tipo:"Pack", detalle:"5 sesiones", precio:29, descripcion:"Clases completas grabadas para repetir cuando quieras.", enlace:"", ejemplo:true},
+  {titulo:"Prevención de lesiones para corredores", categoria:"Readaptación deportiva", tipo:"Curso", detalle:"6 lecciones", precio:49, descripcion:"Fuerza, movilidad y carga de entrenamiento, explicado paso a paso.", enlace:"", ejemplo:true},
+  {titulo:"Rutina diaria de suelo pélvico", categoria:"Suelo pélvico", tipo:"PDF", detalle:"Guía descargable", precio:0, descripcion:"Una rutina breve para mantener lo trabajado en consulta.", enlace:"", ejemplo:true}
+];
+
+(function(){
+  var $=function(id){return document.getElementById(id)};
+  if(PRECIO){$('price').textContent=PRECIO;}
+  if(EMAIL){$('email').textContent=EMAIL;}
+
+  var pacientes=[
+    ["P-001","Ejemplo A","02/11","Mutua ejemplo","Activo","Sí"],
+    ["P-002","Ejemplo B","09/11","","Activo","Pendiente"],
+    ["P-003","Ejemplo C","09/11","","Pausado","Sí"],
+    ["P-004","Ejemplo D","10/11","Mutua ejemplo","Activo","No"]
+  ];
+  var nombre={};pacientes.forEach(function(p){nombre[p[0]]=p[1]});
+  var ses=[
+    ["10/11","P-001","Individual","Realizada",45,true],
+    ["10/11","P-002","Domiciliaria","Realizada",60,false],
+    ["11/11","P-003","Individual","No asistió",45,false],
+    ["12/11","P-001","Individual","Realizada",45,false],
+    ["12/11","P-004","Telemedicina","Cancelada",35,false],
+    ["13/11","P-002","Grupal","Realizada",20,true]
+  ];
+  var estados=["Realizada","Cancelada","No asistió"];
+  var eur=function(n){return n.toFixed(2).replace('.',',')};
+
+  ses.forEach(function(r,i){
+    var tr=document.createElement('tr');
+    tr.innerHTML='<td>'+r[0]+'</td><td>'+r[1]+'</td><td>'+nombre[r[1]]+'</td><td>'+r[2]+'</td>'+
+      '<td><select class="state" id="estado-'+i+'" aria-label="Estado de la sesión '+(i+1)+'" data-v="'+r[3]+'">'+
+      estados.map(function(e){return '<option'+(e===r[3]?' selected':'')+'>'+e+'</option>'}).join('')+'</select></td>'+
+      '<td class="num">'+eur(r[4])+'</td>'+
+      '<td class="c"><input type="checkbox" id="cobrado-'+i+'" aria-label="Cobrada la sesión '+(i+1)+'"'+(r[5]?' checked':'')+'></td>';
+    $('rows').appendChild(tr);
+    tr.querySelector('select').addEventListener('change',function(){r[3]=this.value;this.dataset.v=this.value;calc(true)});
+    tr.querySelector('input').addEventListener('change',function(){r[5]=this.checked;calc(true)});
+  });
+
+  function set(id,v,anim){var el=$(id);if(el.textContent===v)return;el.textContent=v;
+    if(anim){el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump');}}
+  function calc(anim){
+    var real=0,na=0,can=0,cob=0,pen=0,por={};
+    ses.forEach(function(r){
+      if(r[3]==="Realizada"){real++;por[r[1]]=(por[r[1]]||0)+1; if(r[5])cob+=r[4]; else pen+=r[4];}
+      else if(r[3]==="No asistió")na++; else can++;
+    });
+    var tasa=(real+na===0?0:na/(real+na)*100).toFixed(1).replace('.',',')+' %';
+    set('k-real',String(real),anim); set('k-cob',cob+' €',anim); set('k-pen',pen+' €',anim); set('k-tasa',tasa,anim);
+    $('pac').innerHTML=pacientes.map(function(p){
+      return '<tr><td>'+p[0]+'</td><td>'+p[1]+'</td><td>'+p[2]+'</td><td>'+(p[3]||'')+'</td><td><span class="chip" data-v="'+p[4]+'">'+p[4]+
+        '</span></td><td class="num">'+(por[p[0]]||0)+'</td><td><span class="chip" data-v="'+p[5]+'">'+p[5]+'</span></td></tr>'}).join('');
+    var act=pacientes.filter(function(p){return p[4]==="Activo"}).length;
+    var sin=pacientes.filter(function(p){return p[5]!=="Sí"}).length;
+    var html=[["Sesiones realizadas",real],["Cancelaciones",can],["No asistencias",na],["Tasa de no asistencia",tasa],
+      ["Ingresos cobrados",eur(cob)+' €'],["Pendiente de cobro",eur(pen)+' €',1],["Pacientes activos",act],["Pacientes sin consentimiento RGPD",sin]]
+      .map(function(k){return '<tr'+(k[2]?' class="owe"':'')+'><td>'+k[0]+'</td><td>'+k[1]+'</td></tr>'}).join('');
+    [].forEach.call(document.querySelectorAll('.res-out'),function(t){t.innerHTML=html});
+  }
+  calc(false);
+
+  [].forEach.call(document.querySelectorAll('[role=tablist]'),function(list){
+    var tabs=[].slice.call(list.querySelectorAll('[role=tab]'));
+    tabs.forEach(function(t){t.addEventListener('click',function(){
+      tabs.forEach(function(o){var on=o===t;o.setAttribute('aria-selected',on);$(o.getAttribute('aria-controls')).hidden=!on;});
+    })});
+  });
+
+  var esc=function(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
+  var cats=['Todos'];PRODUCTOS.forEach(function(p){if(cats.indexOf(p.categoria)<0)cats.push(p.categoria)});
+  var actual='Todos';
+  function tienda(){
+    $('filters').innerHTML=cats.map(function(c,i){return '<button type="button" id="filtro-'+i+'" aria-pressed="'+(c===actual)+'">'+esc(c)+'</button>'}).join('');
+    $('shop').innerHTML=PRODUCTOS.filter(function(p){return actual==='Todos'||p.categoria===actual}).map(function(p){
+      var gratis=!p.precio, ok=/^https:\/\//.test(p.enlace||'');
+      var cta=ok?'<a class="pill" href="'+esc(p.enlace)+'" target="_blank" rel="noopener">'+(gratis?'Descargar':'Comprar')+'</a>':'<span class="pending">Enlace pendiente</span>';
+      return '<article class="prod"><div class="cover">'+(p.ejemplo?'<span class="eg">Ejemplo</span>':'<span></span>')+'<div><b>'+esc(p.tipo)+'</b><br>'+esc(p.detalle)+'</div></div>'+
+        '<div class="body"><span class="cat">'+esc(p.categoria)+'</span><h3>'+esc(p.titulo)+'</h3><p>'+esc(p.descripcion)+'</p>'+
+        '<div class="row"><span class="amt">'+(gratis?'Gratis':p.precio+' €')+'</span>'+cta+'</div></div></article>'}).join('');
+  }
+  $('filters').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;actual=b.textContent;tienda();});
+  tienda();
+
+  $('copy').addEventListener('click',function(){
+    var out=$('email'),b=this;
+    function sel(){var s=getSelection(),g=document.createRange();g.selectNodeContents(out);s.removeAllRanges();s.addRange(g);}
+    try{navigator.clipboard.writeText(out.textContent).then(function(){b.textContent='Copiado'},sel)}catch(e){sel()}
+  });
+})();
+</script>

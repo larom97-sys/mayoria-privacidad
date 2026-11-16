@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Programas y guías</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="#tienda">Programas y guías</a>
+    <nav>
+      <a class="tab" href="#tienda" data-nav="tienda">Tienda</a>
+      <a class="tab" href="#mi-plan" data-nav="mi-plan">Mi plan</a>
+      <a class="tab" href="#mis-programas" data-nav="mis-programas">Mis programas</a>
+      <button class="tab" type="button" id="session"></button>
+    </nav>
+  </div>
+</header>
+<main class="wrap" id="view"></main>
+<dialog id="unlock" aria-label="Opciones de acceso"><div class="dlg" id="unlock-body"></div></dialog>
+
+<script src="vendor/supabase.js"></script>
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script src="clinical.js"></script>
+<script src="plan.js"></script>
+<script src="portal.js"></script>
+</body>
+</html>
